@@ -4860,6 +4860,48 @@ def toggle_monitor_mode():
         # Try airmon-ng first
         if check_tool('airmon-ng'):
             try:
+                import re
+
+                # Get list of wireless interfaces BEFORE enabling monitor mode
+                def get_wireless_interfaces():
+                    """Get all wireless interface names."""
+                    interfaces = set()
+                    try:
+                        # Try iwconfig first (shows wireless interfaces)
+                        result = subprocess.run(['iwconfig'], capture_output=True, text=True, timeout=5)
+                        for line in result.stdout.split('\n'):
+                            if line and not line.startswith(' ') and 'no wireless' not in line.lower():
+                                iface = line.split()[0] if line.split() else None
+                                if iface:
+                                    interfaces.add(iface)
+                    except:
+                        pass
+
+                    try:
+                        # Also check /sys/class/net for interfaces with wireless dir
+                        import os
+                        for iface in os.listdir('/sys/class/net'):
+                            if os.path.exists(f'/sys/class/net/{iface}/wireless'):
+                                interfaces.add(iface)
+                    except:
+                        pass
+
+                    try:
+                        # Also try ip link to find any interface
+                        result = subprocess.run(['ip', 'link', 'show'], capture_output=True, text=True, timeout=5)
+                        for match in re.finditer(r'^\d+:\s+(\S+):', result.stdout, re.MULTILINE):
+                            iface = match.group(1).rstrip(':')
+                            # Include interfaces that look like wireless (wl*, wlan*, etc)
+                            if iface.startswith('wl') or 'mon' in iface:
+                                interfaces.add(iface)
+                    except:
+                        pass
+
+                    return interfaces
+
+                interfaces_before = get_wireless_interfaces()
+                print(f"[WiFi] Interfaces before monitor mode: {interfaces_before}", flush=True)
+
                 # Kill interfering processes
                 subprocess.run(['airmon-ng', 'check', 'kill'], capture_output=True, timeout=10)
 
@@ -4867,29 +4909,98 @@ def toggle_monitor_mode():
                 result = subprocess.run(['airmon-ng', 'start', interface],
                                         capture_output=True, text=True, timeout=15)
 
-                # Parse output to find monitor interface name
                 output = result.stdout + result.stderr
-                # Common patterns: wlan0mon, wlp3s0mon, etc.
-                import re
-                # Look for "on <interface>mon" pattern first (most reliable)
-                match = re.search(r'\bon\s+(\w+mon)\b', output, re.IGNORECASE)
-                if not match:
-                    # Fallback: look for interface pattern like wlan0mon, wlp3s0mon (must have a digit)
-                    match = re.search(r'\b(\w*\d+\w*mon)\b', output)
-                if not match:
-                    # Second fallback: look for the original interface + mon in output
-                    iface_pattern = re.escape(interface) + r'mon'
-                    match = re.search(r'\b(' + iface_pattern + r')\b', output)
-                if match:
-                    wifi_monitor_interface = match.group(1)
-                else:
-                    # Assume it's interface + 'mon'
-                    wifi_monitor_interface = interface + 'mon'
+                print(f"[WiFi] airmon-ng output:\n{output}", flush=True)
 
+                # Get interfaces AFTER enabling monitor mode
+                import time
+                time.sleep(1)  # Give system time to register new interface
+                interfaces_after = get_wireless_interfaces()
+                print(f"[WiFi] Interfaces after monitor mode: {interfaces_after}", flush=True)
+
+                # Find the new interface (the monitor mode one)
+                new_interfaces = interfaces_after - interfaces_before
+                print(f"[WiFi] New interfaces detected: {new_interfaces}", flush=True)
+
+                # Determine monitor interface
+                monitor_iface = None
+
+                # Method 1: New interface appeared
+                if new_interfaces:
+                    # Prefer interface with 'mon' in name
+                    for iface in new_interfaces:
+                        if 'mon' in iface:
+                            monitor_iface = iface
+                            break
+                    if not monitor_iface:
+                        monitor_iface = list(new_interfaces)[0]
+
+                # Method 2: Parse airmon-ng output
+                if not monitor_iface:
+                    # Look for various patterns in airmon-ng output
+                    patterns = [
+                        r'monitor mode.*enabled.*on\s+(\S+)',  # "monitor mode enabled on wlan0mon"
+                        r'\(monitor mode.*enabled.*?(\S+mon)\)',  # "(monitor mode enabled on wlan0mon)"
+                        r'created\s+(\S+mon)',  # "created wlan0mon"
+                        r'\bon\s+(\S+mon)\b',  # "on wlan0mon"
+                        r'\b(\S+mon)\b.*monitor',  # "wlan0mon in monitor"
+                        r'\b(' + re.escape(interface) + r'mon)\b',  # exact match: interfacemon
+                    ]
+                    for pattern in patterns:
+                        match = re.search(pattern, output, re.IGNORECASE)
+                        if match:
+                            monitor_iface = match.group(1)
+                            print(f"[WiFi] Found monitor interface via pattern '{pattern}': {monitor_iface}", flush=True)
+                            break
+
+                # Method 3: Check if original interface now in monitor mode
+                if not monitor_iface:
+                    # Check if original interface is now in monitor mode
+                    try:
+                        result = subprocess.run(['iwconfig', interface], capture_output=True, text=True, timeout=5)
+                        if 'Mode:Monitor' in result.stdout:
+                            monitor_iface = interface
+                            print(f"[WiFi] Original interface {interface} is now in monitor mode", flush=True)
+                    except:
+                        pass
+
+                # Method 4: Check interface + 'mon'
+                if not monitor_iface:
+                    potential = interface + 'mon'
+                    if potential in interfaces_after:
+                        monitor_iface = potential
+
+                # Method 5: Last resort - assume interface + 'mon'
+                if not monitor_iface:
+                    monitor_iface = interface + 'mon'
+                    print(f"[WiFi] Assuming monitor interface: {monitor_iface}", flush=True)
+
+                # Verify the interface actually exists
+                try:
+                    result = subprocess.run(['ip', 'link', 'show', monitor_iface], capture_output=True, text=True, timeout=5)
+                    if result.returncode != 0:
+                        # Interface doesn't exist - try to find any mon interface
+                        for iface in interfaces_after:
+                            if 'mon' in iface or iface.startswith('wl'):
+                                # Check if it's in monitor mode
+                                try:
+                                    check = subprocess.run(['iwconfig', iface], capture_output=True, text=True, timeout=5)
+                                    if 'Mode:Monitor' in check.stdout:
+                                        monitor_iface = iface
+                                        print(f"[WiFi] Found working monitor interface: {monitor_iface}", flush=True)
+                                        break
+                                except:
+                                    pass
+                except:
+                    pass
+
+                wifi_monitor_interface = monitor_iface
                 wifi_queue.put({'type': 'info', 'text': f'Monitor mode enabled on {wifi_monitor_interface}'})
                 return jsonify({'status': 'success', 'monitor_interface': wifi_monitor_interface})
 
             except Exception as e:
+                import traceback
+                print(f"[WiFi] Error enabling monitor mode: {e}\n{traceback.format_exc()}", flush=True)
                 return jsonify({'status': 'error', 'message': str(e)})
 
         # Fallback to iw (Linux)
