@@ -4129,12 +4129,14 @@ HTML_TEMPLATE = '''
 
             Object.values(btDevices).forEach(d => {
                 const devType = d.device_type || 'other';
+                console.log('[CHART] Device:', d.mac, 'device_type:', d.device_type, 'resolved:', devType);
                 if (d.tracker) trackers++;
                 else if (devType === 'phone') phones++;
                 else if (devType === 'audio') audio++;
                 else if (devType === 'wearable') wearables++;
                 else other++;
             });
+            console.log('[CHART] Totals - phones:', phones, 'audio:', audio, 'wearables:', wearables, 'trackers:', trackers, 'other:', other);
 
             document.getElementById('btPhoneCount').textContent = phones;
             document.getElementById('btAudioCount').textContent = audio;
@@ -4192,10 +4194,12 @@ HTML_TEMPLATE = '''
             const manufacturers = {};
             Object.values(btDevices).forEach(d => {
                 const m = d.manufacturer || 'Unknown';
+                console.log('[MFR] Device:', d.mac, 'manufacturer:', d.manufacturer, 'resolved:', m);
                 manufacturers[m] = (manufacturers[m] || 0) + 1;
             });
 
             const sorted = Object.entries(manufacturers).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            console.log('[MFR] Sorted manufacturers:', sorted);
 
             const list = document.getElementById('btManufacturerList');
             if (sorted.length === 0) {
