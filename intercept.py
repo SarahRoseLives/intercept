@@ -13342,17 +13342,17 @@ def satellite_dashboard():
             container.innerHTML = passes.slice(0, 10).map((pass, idx) => {
                 const quality = pass.maxEl >= 60 ? 'excellent' : pass.maxEl >= 30 ? 'good' : 'fair';
                 const qualityText = pass.maxEl >= 60 ? 'EXCELLENT' : pass.maxEl >= 30 ? 'GOOD' : 'FAIR';
-                const time = new Date(pass.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const time = pass.startTime.split(' ')[1] || pass.startTime; // Extract time portion
 
                 return `
                     <div class="pass-item ${selectedPass === idx ? 'active' : ''}" onclick="selectPass(${idx})">
                         <div class="pass-item-header">
-                            <span class="pass-sat-name">${pass.name}</span>
+                            <span class="pass-sat-name">${pass.satellite}</span>
                             <span class="pass-quality ${quality}">${qualityText}</span>
                         </div>
                         <div class="pass-item-details">
                             <span class="pass-time">${time}</span>
-                            <span>${pass.maxEl.toFixed(0)}° max · ${pass.duration.toFixed(0)} min</span>
+                            <span>${pass.maxEl.toFixed(0)}° max · ${pass.duration} min</span>
                         </div>
                     </div>
                 `;
@@ -13551,14 +13551,11 @@ def satellite_dashboard():
         }
 
         function updateStats() {
-            document.getElementById('statTracked').textContent = satellites.length;
+            document.getElementById('statTracked').textContent = Object.keys(satellites).length;
             document.getElementById('statPasses').textContent = passes.length;
 
             const maxEl = passes.reduce((max, p) => Math.max(max, p.maxEl || 0), 0);
             document.getElementById('statMaxEl').textContent = maxEl.toFixed(0) + '°';
-
-            // Visible count would need real-time position data
-            document.getElementById('statVisible').textContent = '0';
         }
 
         function updateTelemetry(pass) {
@@ -13582,21 +13579,8 @@ def satellite_dashboard():
         }
 
         function updateCountdown() {
-            if (!passes || passes.length === 0) return;
-
-            const now = new Date();
-            let nextPass = null;
-
-            for (const pass of passes) {
-                const start = new Date(pass.start);
-                if (start > now) {
-                    nextPass = pass;
-                    break;
-                }
-            }
-
-            if (!nextPass) {
-                document.getElementById('countdownSat').textContent = 'NO UPCOMING';
+            if (!passes || passes.length === 0) {
+                document.getElementById('countdownSat').textContent = 'NO PASSES FOUND';
                 document.getElementById('countDays').textContent = '--';
                 document.getElementById('countHours').textContent = '--';
                 document.getElementById('countMins').textContent = '--';
@@ -13604,9 +13588,37 @@ def satellite_dashboard():
                 return;
             }
 
-            document.getElementById('countdownSat').textContent = nextPass.name;
+            const now = new Date();
+            let nextPass = null;
 
-            const diff = new Date(nextPass.start) - now;
+            for (const pass of passes) {
+                // Parse the startTimeISO field
+                const start = new Date(pass.startTimeISO);
+                if (start > now) {
+                    nextPass = pass;
+                    break;
+                }
+            }
+
+            if (!nextPass) {
+                // All passes are in the past, show the first one anyway
+                nextPass = passes[0];
+            }
+
+            document.getElementById('countdownSat').textContent = nextPass.satellite;
+
+            const passTime = new Date(nextPass.startTimeISO);
+            const diff = passTime - now;
+
+            if (diff <= 0) {
+                // Pass is happening now or passed
+                document.getElementById('countDays').textContent = '00';
+                document.getElementById('countHours').textContent = '00';
+                document.getElementById('countMins').textContent = '00';
+                document.getElementById('countSecs').textContent = '00';
+                return;
+            }
+
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -13878,7 +13890,16 @@ def predict_passes():
             satellites.append(sat)
 
     passes = []
-    colors = {'ISS': '#00ffff', 'NOAA-15': '#00ff00', 'NOAA-18': '#ff6600', 'NOAA-19': '#ff3366', 'METEOR-M2': '#9370DB'}
+    colors = {
+        'ISS': '#00ffff',
+        'NOAA-15': '#00ff00',
+        'NOAA-18': '#ff6600',
+        'NOAA-19': '#ff3366',
+        'NOAA-20': '#00ffaa',
+        'METEOR-M2': '#9370DB',
+        'METEOR-M2-3': '#ff00ff'
+    }
+    name_to_norad = {v: k for k, v in norad_to_name.items()}
 
     ts = load.timescale()
     observer = wgs84.latlon(lat, lon)
@@ -13950,7 +13971,7 @@ def predict_passes():
                     if el > max_elevation:
                         max_elevation = el
 
-                    trajectory.append({'elevation': max(0, el), 'azimuth': azimuth})
+                    trajectory.append({'el': max(0, el), 'az': azimuth})
 
                 # Only include pass if max elevation meets minimum requirement
                 if max_elevation >= min_el:
@@ -13976,17 +13997,16 @@ def predict_passes():
 
                     passes.append({
                         'satellite': sat_name,
+                        'norad': name_to_norad.get(sat_name, 0),
                         'startTime': rise_time.utc_datetime().strftime('%Y-%m-%d %H:%M UTC'),
+                        'startTimeISO': rise_time.utc_datetime().isoformat(),
                         'maxEl': round(max_elevation, 1),
                         'duration': duration_minutes,
                         'trajectory': trajectory,
                         'groundTrack': ground_track,
-                        'currentPosition': {
+                        'currentPos': {
                             'lat': current_subpoint.latitude.degrees,
-                            'lon': current_subpoint.longitude.degrees,
-                            'altitude': current_geo.distance().km - 6371,  # Approx altitude
-                            'elevation': current_alt.degrees,
-                            'azimuth': current_az.degrees
+                            'lon': current_subpoint.longitude.degrees
                         },
                         'color': colors.get(sat_name, '#00ff00')
                     })
