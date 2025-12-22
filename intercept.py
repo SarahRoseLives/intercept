@@ -11998,8 +11998,10 @@ def start_adsb():
 
     if dump1090_path:
         cmd = [dump1090_path, '--raw', '--net', f'--gain', gain, f'--device-index', str(device)]
+        print(f"[ADS-B] Using dump1090: {dump1090_path}")
     elif shutil.which('rtl_adsb'):
         cmd = ['rtl_adsb', '-g', gain, '-d', str(device)]
+        print("[ADS-B] Using rtl_adsb (no JSON endpoint available)")
     else:
         return jsonify({'status': 'error', 'message': 'No ADS-B decoder found (install dump1090 or rtl_adsb)'})
 
@@ -12075,7 +12077,7 @@ def parse_adsb_output(process):
         ]
         working_url = None
 
-        while adsb_process and adsb_process.poll() is None:
+        while process and process.poll() is None:
             try:
                 # Find working URL on first success
                 urls_to_try = [working_url] if working_url else json_urls
@@ -12085,7 +12087,10 @@ def parse_adsb_output(process):
                             data = json_lib.loads(response.read().decode())
                             working_url = url
 
-                            for ac in data.get('aircraft', []):
+                            aircraft_list = data.get('aircraft', [])
+                            if aircraft_list:
+                                print(f"[ADS-B] JSON: Found {len(aircraft_list)} aircraft")
+                            for ac in aircraft_list:
                                 icao = ac.get('hex', '').upper()
                                 if not icao:
                                     continue
@@ -12136,6 +12141,7 @@ def parse_adsb_output(process):
 
                     # Create placeholder if not seen via JSON yet
                     if icao not in adsb_aircraft:
+                        print(f"[ADS-B] Raw: New aircraft {icao}")
                         aircraft = {
                             'icao': icao,
                             'callsign': None,
