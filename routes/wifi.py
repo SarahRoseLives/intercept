@@ -973,6 +973,83 @@ def stop_pmkid():
     return jsonify({'status': 'stopped'})
 
 
+@wifi_bp.route('/handshake/crack', methods=['POST'])
+def crack_handshake():
+    """Crack a captured handshake using aircrack-ng."""
+    data = request.json
+    capture_file = data.get('capture_file', '')
+    target_bssid = data.get('bssid', '')
+    wordlist = data.get('wordlist', '')
+
+    # Validate paths to prevent path traversal
+    if not capture_file.startswith('/tmp/intercept_handshake_') or '..' in capture_file:
+        return jsonify({'status': 'error', 'message': 'Invalid capture file path'}), 400
+
+    if '..' in wordlist:
+        return jsonify({'status': 'error', 'message': 'Invalid wordlist path'}), 400
+
+    if not os.path.exists(capture_file):
+        return jsonify({'status': 'error', 'message': 'Capture file not found'}), 404
+
+    if not os.path.exists(wordlist):
+        return jsonify({'status': 'error', 'message': 'Wordlist file not found'}), 404
+
+    if target_bssid and not is_valid_mac(target_bssid):
+        return jsonify({'status': 'error', 'message': 'Invalid BSSID format'}), 400
+
+    aircrack_path = get_tool_path('aircrack-ng')
+    if not aircrack_path:
+        return jsonify({'status': 'error', 'message': 'aircrack-ng not found'}), 500
+
+    try:
+        cmd = [aircrack_path, '-a', '2', '-w', wordlist]
+        if target_bssid:
+            cmd.extend(['-b', target_bssid])
+        cmd.append(capture_file)
+
+        logger.info(f"Starting aircrack-ng: {' '.join(cmd)}")
+
+        # Run aircrack-ng with a timeout (this could take a while)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+
+        output = result.stdout + result.stderr
+
+        # Check if password was found
+        # Aircrack-ng outputs "KEY FOUND! [ password ]" when successful
+        if 'KEY FOUND!' in output:
+            # Extract the password
+            import re
+            match = re.search(r'KEY FOUND!\s*\[\s*(.+?)\s*\]', output)
+            if match:
+                password = match.group(1)
+                logger.info(f"Password cracked for {target_bssid}: {password}")
+                return jsonify({
+                    'status': 'success',
+                    'password': password,
+                    'bssid': target_bssid
+                })
+
+        # Password not found
+        return jsonify({
+            'status': 'not_found',
+            'message': 'Password not in wordlist'
+        })
+
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'status': 'timeout',
+            'message': 'Cracking timed out after 5 minutes. Try a smaller wordlist or use hashcat.'
+        })
+    except Exception as e:
+        logger.error(f"Crack error: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @wifi_bp.route('/networks')
 def get_wifi_networks():
     """Get current list of discovered networks."""

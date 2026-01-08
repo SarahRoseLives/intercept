@@ -611,26 +611,6 @@
                         </div>
                     </div>
 
-                    <!-- PMKID Capture Panel -->
-                    <div class="section" id="pmkidPanel" style="display: none; border: 1px solid #9933ff; border-radius: 4px; padding: 10px; background: rgba(153, 51, 255, 0.1);">
-                        <h3 style="color: #9933ff; margin: 0 0 8px 0;">🔐 PMKID Capture</h3>
-                        <div style="font-size: 11px;">
-                            <div style="margin-bottom: 4px;">
-                                <span style="color: var(--text-dim);">Target:</span>
-                                <span id="pmkidTargetBssid" style="font-family: monospace;">--</span>
-                            </div>
-                            <div style="margin-bottom: 4px;">
-                                <span style="color: var(--text-dim);">Status:</span>
-                                <span id="pmkidStatus" style="font-weight: bold;">--</span>
-                            </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button class="preset-btn" onclick="stopPmkidCapture()" style="flex: 1; font-size: 10px; padding: 4px; border-color: var(--accent-red); color: var(--accent-red);">
-                                    Stop
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Beacon Flood Alert Panel -->
                     <div id="beaconFloodAlert" class="beacon-flood-alert" style="display: none;">
                         <h4 style="color: #ff4444; margin: 0 0 8px 0;">⚠️ BEACON FLOOD DETECTED</h4>
@@ -1210,12 +1190,28 @@
                                 <div style="color: var(--text-dim); padding: 20px; text-align: center;">Click a network or client to view details</div>
                             </div>
                         </div>
+                    <!-- Row 1: Network Radar + Security Overview -->
                     <div class="wifi-visual-panel">
                         <h5>Network Radar</h5>
                         <div class="radar-container">
                             <canvas id="radarCanvas" width="150" height="150"></canvas>
                         </div>
                     </div>
+                    <div class="wifi-visual-panel">
+                        <h5>Security Overview</h5>
+                        <div class="security-container">
+                            <div class="security-donut">
+                                <canvas id="securityCanvas" width="80" height="80"></canvas>
+                            </div>
+                            <div class="security-legend">
+                                <div class="security-legend-item"><div class="security-legend-dot wpa3"></div>WPA3: <span id="wpa3Count">0</span></div>
+                                <div class="security-legend-item"><div class="security-legend-dot wpa2"></div>WPA2: <span id="wpa2Count">0</span></div>
+                                <div class="security-legend-item"><div class="security-legend-dot wep"></div>WEP: <span id="wepCount">0</span></div>
+                                <div class="security-legend-item"><div class="security-legend-dot open"></div>Open: <span id="openCount">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 2: Channel Utilization (2.4 GHz + 5 GHz side by side) -->
                     <div class="wifi-visual-panel">
                         <h5>Channel Utilization (2.4 GHz)</h5>
                         <div class="channel-graph" id="channelGraph">
@@ -1253,31 +1249,7 @@
                             <div class="channel-bar-wrapper"><div class="channel-bar" style="height: 2px;"></div><span class="channel-label">165</span></div>
                         </div>
                     </div>
-                    <div class="wifi-visual-panel">
-                        <h5>Security Overview</h5>
-                        <div class="security-container">
-                            <div class="security-donut">
-                                <canvas id="securityCanvas" width="80" height="80"></canvas>
-                            </div>
-                            <div class="security-legend">
-                                <div class="security-legend-item"><div class="security-legend-dot wpa3"></div>WPA3: <span id="wpa3Count">0</span></div>
-                                <div class="security-legend-item"><div class="security-legend-dot wpa2"></div>WPA2: <span id="wpa2Count">0</span></div>
-                                <div class="security-legend-item"><div class="security-legend-dot wep"></div>WEP: <span id="wepCount">0</span></div>
-                                <div class="security-legend-item"><div class="security-legend-dot open"></div>Open: <span id="openCount">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Network Relationship Graph -->
-                    <div class="wifi-visual-panel network-graph-container" style="grid-column: span 2;">
-                        <h4>🕸️ Network Topology</h4>
-                        <canvas id="networkGraph"></canvas>
-                        <div class="network-graph-legend">
-                            <div class="legend-item"><div class="legend-dot ap"></div>Access Point</div>
-                            <div class="legend-item"><div class="legend-dot client"></div>Client</div>
-                            <div class="legend-item"><div class="legend-dot drone"></div>Drone</div>
-                        </div>
-                    </div>
-                    <!-- Channel Recommendation -->
+                    <!-- Row 3: Channel Recommendation -->
                     <div class="wifi-visual-panel channel-recommendation" id="channelRecommendation">
                         <h4>💡 Channel Recommendation</h4>
                         <div class="rec-text">
@@ -5114,8 +5086,7 @@
                 </div>
                 <div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">
                     <button class="preset-btn" onclick="targetNetwork('${escapeAttr(net.bssid)}', '${escapeAttr(net.channel)}')" style="font-size: 10px; padding: 4px 8px;">Target</button>
-                    <button class="preset-btn" onclick="captureHandshake('${escapeAttr(net.bssid)}', '${escapeAttr(net.channel)}')" style="font-size: 10px; padding: 4px 8px; border-color: var(--accent-orange); color: var(--accent-orange);">4-Way</button>
-                    <button class="preset-btn pmkid-btn" onclick="capturePmkid('${escapeAttr(net.bssid)}', '${escapeAttr(net.channel)}')" style="font-size: 10px; padding: 4px 8px;">PMKID</button>
+                    <button class="preset-btn" onclick="captureHandshake('${escapeAttr(net.bssid)}', '${escapeAttr(net.channel)}')" style="font-size: 10px; padding: 4px 8px; border-color: var(--accent-orange); color: var(--accent-orange);">Handshake</button>
                 </div>
             `;
 
@@ -5233,6 +5204,24 @@
                           clearInterval(activeCapture.pollInterval);
                       }
                       document.getElementById('handshakeCount').style.animation = '';
+
+                      // Show crack button in the capture panel
+                      const panel = document.getElementById('captureStatusPanel');
+                      const existingCrackBtn = panel.querySelector('.crack-btn');
+                      if (!existingCrackBtn) {
+                          const crackDiv = document.createElement('div');
+                          crackDiv.style.marginTop = '10px';
+                          crackDiv.innerHTML = `
+                              <button class="preset-btn crack-btn" onclick="crackHandshake('${data.file}', '${activeCapture.bssid}')" style="width: 100%; background: var(--accent-green); border-color: var(--accent-green); color: #000; font-weight: bold;">
+                                  🔓 Crack with Aircrack-ng
+                              </button>
+                          `;
+                          panel.querySelector('.section') ? panel.querySelector('.section').appendChild(crackDiv) : panel.appendChild(crackDiv);
+                      }
+
+                      // Store the captured file for later use
+                      activeCapture.captured = true;
+                      activeCapture.capturedFile = data.file;
                   } else if (data.file_exists) {
                       const sizeKB = (data.file_size / 1024).toFixed(1);
                       statusSpan.textContent = 'Capturing... (' + sizeKB + ' KB, ' + elapsedStr + ')';
@@ -5272,97 +5261,44 @@
             activeCapture = null;
         }
 
-        // PMKID Capture
-        let activePmkid = null;
+        // Crack handshake with aircrack-ng
+        function crackHandshake(captureFile, bssid) {
+            const wordlist = prompt('Enter path to wordlist file:\n\nCommon locations:\n- /usr/share/wordlists/rockyou.txt\n- /usr/share/john/password.lst', '/usr/share/wordlists/rockyou.txt');
 
-        async function capturePmkid(bssid, channel) {
-            if (!confirm('Start PMKID capture for ' + bssid + '?\n\nThis uses hcxdumptool to capture PMKID without needing clients.\n\n⚠ Only use on networks you own or have authorization to test!')) {
+            if (!wordlist) {
+                showInfo('Cracking cancelled');
                 return;
             }
 
-            const iface = monitorInterface || document.getElementById('wifiInterfaceSelect').value;
-            if (!iface) {
-                showError('No monitor interface available. Enable monitor mode first.');
-                return;
-            }
+            showInfo('Starting aircrack-ng... This may take a while.');
 
-            // Stop any existing scan first
-            if (isWifiRunning) {
-                showInfo('Stopping current scan...');
-                try {
-                    await fetch('/wifi/scan/stop', {method: 'POST'});
-                    if (wifiEventSource) {
-                        wifiEventSource.close();
-                        wifiEventSource = null;
-                    }
-                    setWifiRunning(false);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                } catch (e) {
-                    console.error('Error stopping scan:', e);
-                }
-            }
-
-            try {
-                const response = await fetch('/wifi/pmkid/capture', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ interface: iface, bssid: bssid, channel: channel })
-                });
-                const data = await response.json();
-
-                if (data.status === 'started') {
-                    activePmkid = { bssid: bssid, file: data.file, startTime: Date.now() };
-                    document.getElementById('pmkidPanel').style.display = 'block';
-                    document.getElementById('pmkidTargetBssid').textContent = bssid;
-                    document.getElementById('pmkidStatus').textContent = 'Capturing...';
-                    document.getElementById('pmkidStatus').style.color = '#9933ff';
-                    showInfo('PMKID capture started for ' + bssid);
-
-                    // Poll for PMKID
-                    activePmkid.pollInterval = setInterval(checkPmkidStatus, 3000);
-                } else {
-                    showError('PMKID capture failed: ' + (data.message || 'Unknown error'));
-                }
-            } catch (err) {
-                showError('PMKID capture error: ' + err.message);
-                console.error('PMKID capture error:', err);
-            }
-        }
-
-        function checkPmkidStatus() {
-            if (!activePmkid) return;
-
-            fetch('/wifi/pmkid/status', {
+            fetch('/wifi/handshake/crack', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ file: activePmkid.file })
+                body: JSON.stringify({
+                    capture_file: captureFile,
+                    bssid: bssid,
+                    wordlist: wordlist
+                })
             })
             .then(r => r.json())
             .then(data => {
-                if (data.pmkid_found) {
-                    document.getElementById('pmkidStatus').textContent = '✓ PMKID CAPTURED!';
-                    document.getElementById('pmkidStatus').style.color = 'var(--accent-green)';
-                    showInfo('🎉 PMKID captured! File: ' + data.file);
-                    showNotification('🔐 PMKID Captured!', `Target: ${activePmkid.bssid}`);
-                    clearInterval(activePmkid.pollInterval);
+                if (data.status === 'success' && data.password) {
+                    showInfo('🎉 PASSWORD FOUND: ' + data.password);
+                    showNotification('🔓 Password Cracked!', data.password);
+                    alert('Password found!\n\n' + data.password + '\n\nThis has been logged.');
+                } else if (data.status === 'not_found') {
+                    showInfo('Password not found in wordlist. Try a different wordlist.');
+                    alert('Password not found in wordlist.\n\nTry using a larger or different wordlist.');
+                } else if (data.status === 'running') {
+                    showInfo('Aircrack-ng is running in background. Check terminal for progress.');
                 } else {
-                    const elapsed = Math.floor((Date.now() - activePmkid.startTime) / 1000);
-                    document.getElementById('pmkidStatus').textContent = 'Scanning... (' + elapsed + 's)';
+                    showError('Crack failed: ' + (data.message || 'Unknown error'));
                 }
-            });
-        }
-
-        function stopPmkidCapture() {
-            if (activePmkid && activePmkid.pollInterval) {
-                clearInterval(activePmkid.pollInterval);
-            }
-
-            fetch('/wifi/pmkid/stop', { method: 'POST' })
-            .then(() => {
-                document.getElementById('pmkidStatus').textContent = 'Stopped';
-                document.getElementById('pmkidStatus').style.color = 'var(--text-dim)';
-                showInfo('PMKID capture stopped');
-                activePmkid = null;
+            })
+            .catch(err => {
+                showError('Crack error: ' + err.message);
+                console.error('Crack error:', err);
             });
         }
 
