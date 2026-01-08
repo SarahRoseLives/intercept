@@ -2615,6 +2615,22 @@ header p {
     font-size: 12px;
 }
 
+/* WiFi client cards in device list */
+.wifi-client-card {
+    margin-bottom: 8px;
+    padding: 10px !important;
+    border-left-color: var(--accent-purple) !important;
+    background: rgba(153, 51, 255, 0.05);
+}
+
+.wifi-client-card .header {
+    font-size: 12px;
+}
+
+.wifi-client-card .sensor-data {
+    font-size: 10px;
+}
+
 .wifi-network-card .sensor-data {
     font-size: 10px;
 }
