@@ -375,13 +375,19 @@ def _start_audio_stream(frequency: float, modulation: str):
 
         encoder_cmd = [
             ffmpeg_path,
+            '-hide_banner',
+            '-loglevel', 'error',
             '-f', 's16le',
             '-ar', str(resample_rate),
             '-ac', '1',
             '-i', 'pipe:0',
+            '-acodec', 'libmp3lame',
             '-f', 'mp3',
-            '-b:a', '64k',
+            '-b:a', '96k',
+            '-ar', '44100',  # Resample to standard rate for browser compatibility
             '-flush_packets', '1',
+            '-fflags', '+nobuffer',
+            '-flags', '+low_delay',
             'pipe:1'
         ]
 
@@ -754,12 +760,14 @@ def stream_audio() -> Response:
         return Response(b'', mimetype='audio/mpeg', status=204)
 
     def generate():
-        chunk_size = 4096
+        chunk_size = 8192  # Larger chunks for smoother streaming
         try:
             while audio_running and audio_process and audio_process.poll() is None:
                 chunk = audio_process.stdout.read(chunk_size)
                 if not chunk:
-                    break
+                    # Small wait before checking again to avoid busy loop
+                    time.sleep(0.01)
+                    continue
                 yield chunk
         except Exception as e:
             logger.error(f"Audio stream error: {e}")

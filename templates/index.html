@@ -8521,15 +8521,17 @@
             document.getElementById('scannerHitCount').textContent = `${tbody.children.length} signals found`;
         }
 
-        function tuneToFrequency(freq, mod) {
+        async function tuneToFrequency(freq, mod) {
             // Stop scanner if running
             if (isScannerRunning) {
                 stopScanner();
             }
 
-            // Stop any current audio
+            // Stop any current audio and wait for it to complete
             if (isAudioPlaying) {
                 stopAudio();
+                // Wait for audio to fully stop
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
 
             // Set frequency in manual audio form
@@ -8539,7 +8541,10 @@
                 document.getElementById('audioModulation').value = mod;
             }
 
-            // Start playing immediately
+            // Small delay before starting to ensure backend is ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Start playing
             startAudio();
             showNotification('Tuned', `Now listening to ${freq.toFixed(3)} MHz`);
         }
@@ -8604,6 +8609,38 @@
 
         let isAudioPlaying = false;
         let audioToolsAvailable = { rtl_fm: false, ffmpeg: false };
+        let audioReconnectAttempts = 0;
+        const MAX_AUDIO_RECONNECT = 3;
+
+        // Set up audio player error handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.addEventListener('error', function(e) {
+                    console.warn('Audio player error:', e);
+                    if (isAudioPlaying && audioReconnectAttempts < MAX_AUDIO_RECONNECT) {
+                        audioReconnectAttempts++;
+                        console.log(`Reconnecting audio (attempt ${audioReconnectAttempts})...`);
+                        setTimeout(() => {
+                            audioPlayer.src = '/listening/audio/stream?' + Date.now();
+                            audioPlayer.play().catch(() => {});
+                        }, 500);
+                    }
+                });
+
+                audioPlayer.addEventListener('stalled', function() {
+                    console.warn('Audio stalled, attempting recovery...');
+                    if (isAudioPlaying) {
+                        audioPlayer.load();
+                        audioPlayer.play().catch(() => {});
+                    }
+                });
+
+                audioPlayer.addEventListener('playing', function() {
+                    audioReconnectAttempts = 0; // Reset on successful play
+                });
+            }
+        });
 
         // Web Audio API for visualization
         let visualizerContext = null;
