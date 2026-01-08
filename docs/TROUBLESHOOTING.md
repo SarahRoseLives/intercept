@@ -107,6 +107,60 @@ Ensure the correct SoapySDR module for your hardware is installed first
 2. Check driver is loaded: `SoapySDRUtil --find`
 3. May need udev rules or run as root
 
+### Using HackRF/Airspy/LimeSDR with ADS-B
+
+For non-RTL-SDR devices, ADS-B requires `readsb` compiled with SoapySDR support (standard dump1090 won't work).
+
+**Option 1: Run readsb separately and connect via Remote mode**
+
+1. Start readsb with your device:
+   ```bash
+   # HackRF
+   readsb --device-type soapysdr --device driver=hackrf --net --quiet
+
+   # Airspy
+   readsb --device-type soapysdr --device driver=airspy --net --quiet
+
+   # LimeSDR
+   readsb --device-type soapysdr --device driver=lime --net --quiet
+   ```
+
+2. In Intercept's ADS-B dashboard:
+   - Check the **"Remote"** checkbox
+   - Enter Host: `localhost` and Port: `30003`
+   - Click **START**
+
+3. Intercept will connect to readsb's SBS output on port 30003
+
+**Option 2: Install readsb with SoapySDR support**
+
+On Debian/Ubuntu:
+```bash
+# Install dependencies
+sudo apt install build-essential debhelper librtlsdr-dev pkg-config \
+    libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev libsoapysdr-dev
+
+# Clone and build
+git clone https://github.com/wiedehopf/readsb.git
+cd readsb
+dpkg-buildpackage -b --no-sign
+sudo dpkg -i ../readsb_*.deb
+```
+
+### Using HackRF/Airspy with Listening Post
+
+The Listening Post requires `rx_fm` from SoapySDR utilities for non-RTL-SDR devices.
+
+```bash
+# Install SoapySDR utilities (includes rx_fm)
+sudo apt install soapysdr-tools
+
+# Verify rx_fm is available
+which rx_fm
+```
+
+If `rx_fm` is installed, select your device from the SDR dropdown in the Listening Post - HackRF, Airspy, LimeSDR, and SDRPlay are all supported.
+
 ## WiFi Issues
 
 ### Monitor mode fails
