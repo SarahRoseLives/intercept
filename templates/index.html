@@ -1352,7 +1352,8 @@
 
                 <!-- Aircraft Visualizations - Leaflet Map -->
                 <div class="wifi-visuals" id="aircraftVisuals" style="display: none;">
-                    <div class="wifi-visual-panel" style="grid-column: span 4;">
+                    <!-- Map Panel -->
+                    <div class="wifi-visual-panel" style="grid-column: span 3;">
                         <h5 style="color: var(--accent-cyan); text-shadow: 0 0 10px var(--accent-cyan);">ADS-B AIRCRAFT TRACKING</h5>
                         <div class="aircraft-map-container">
                             <div class="map-header">
@@ -1365,6 +1366,31 @@
                                 <span>CENTER: <span id="mapCenter">--</span></span>
                             </div>
                         </div>
+                    </div>
+                    <!-- Aircraft List & Details Panel -->
+                    <div class="wifi-visual-panel" style="grid-column: span 1; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Selected Aircraft -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 10px;">
+                            <h5 style="color: var(--accent-orange); margin-bottom: 10px;">SELECTED TARGET</h5>
+                            <div id="selectedAircraftInfo" style="font-size: 11px;">
+                                <div style="color: var(--text-muted); text-align: center; padding: 20px;">
+                                    Click an aircraft to view details
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Aircraft List -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 10px; flex: 1; overflow-y: auto;">
+                            <h5 style="color: var(--accent-cyan); margin-bottom: 10px;">TRACKED AIRCRAFT</h5>
+                            <div id="aircraftListPanel" style="font-size: 11px; max-height: 300px; overflow-y: auto;">
+                                <div style="color: var(--text-muted); text-align: center; padding: 20px;">
+                                    No aircraft detected
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Open Full Dashboard Button -->
+                        <a href="/adsb/dashboard" target="_blank" class="preset-btn" style="display: block; text-align: center; text-decoration: none; background: var(--accent-cyan); color: #000; padding: 8px;">
+                            Open Full Dashboard
+                        </a>
                     </div>
                 </div>
 
@@ -1760,6 +1786,7 @@
         let activeSquawkAlerts = {};  // Active emergency squawk alerts
         let alertedAircraft = {};  // Track aircraft that have already triggered alerts
         let adsbAlertsEnabled = true;  // Toggle for audio alerts
+        let selectedMainAircraft = null;  // Selected aircraft in main tab
 
         // UTC Clock Update
         function updateHeaderClock() {
@@ -2340,9 +2367,9 @@
             document.getElementById('toolStatusSensor').style.display = (mode === 'sensor') ? 'grid' : 'none';
             document.getElementById('toolStatusAircraft').style.display = (mode === 'aircraft') ? 'grid' : 'none';
 
-            // Hide waterfall and output console for satellite/listening modes (use their own visualizations)
-            document.querySelector('.waterfall-container').style.display = (mode === 'satellite' || mode === 'listening') ? 'none' : 'block';
-            document.getElementById('output').style.display = (mode === 'satellite') ? 'none' : 'block';
+            // Hide waterfall and output console for modes with their own visualizations
+            document.querySelector('.waterfall-container').style.display = (mode === 'satellite' || mode === 'listening' || mode === 'aircraft') ? 'none' : 'block';
+            document.getElementById('output').style.display = (mode === 'satellite' || mode === 'aircraft') ? 'none' : 'block';
             document.querySelector('.status-bar').style.display = (mode === 'satellite') ? 'none' : 'flex';
 
             // Load interfaces and initialize visualizations when switching modes
@@ -4527,29 +4554,37 @@
 
         // Start WiFi scan - auto-enables monitor mode if needed
         async function startWifiScan() {
+            console.log('startWifiScan called');
             const band = document.getElementById('wifiBand').value;
             const channel = document.getElementById('wifiChannel').value;
 
             // Auto-enable monitor mode if not already enabled
             if (!monitorInterface) {
                 const iface = document.getElementById('wifiInterfaceSelect').value;
+                console.log('Selected interface:', iface);
+
                 if (!iface) {
-                    showNotification('WiFi Error', 'No WiFi interface selected');
+                    showNotification('WiFi Error', 'No WiFi interface selected. Please select an adapter from the dropdown.');
+                    alert('No WiFi interface selected. Please select an adapter from the dropdown above.');
                     return;
                 }
 
                 // Show status
                 document.getElementById('statusText').textContent = 'Enabling monitor mode...';
                 document.getElementById('statusDot').classList.add('running');
+                showNotification('WiFi', 'Enabling monitor mode on ' + iface + '...');
 
                 try {
                     const killProcesses = document.getElementById('killProcesses').checked;
+                    console.log('Enabling monitor mode, kill processes:', killProcesses);
+
                     const monitorResp = await fetch('/wifi/monitor', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({interface: iface, action: 'start', kill_processes: killProcesses})
                     });
                     const monitorData = await monitorResp.json();
+                    console.log('Monitor response:', monitorData);
 
                     if (monitorData.status === 'success') {
                         monitorInterface = monitorData.monitor_interface;
@@ -4559,18 +4594,22 @@
                         document.getElementById('statusText').textContent = 'Idle';
                         document.getElementById('statusDot').classList.remove('running');
                         showNotification('Monitor Error', monitorData.message || 'Failed to enable monitor mode');
+                        alert('Monitor mode failed: ' + (monitorData.message || 'Unknown error'));
                         return;
                     }
                 } catch (err) {
+                    console.error('Monitor mode error:', err);
                     document.getElementById('statusText').textContent = 'Idle';
                     document.getElementById('statusDot').classList.remove('running');
                     showNotification('Monitor Error', err.message);
+                    alert('Monitor mode error: ' + err.message);
                     return;
                 }
             }
 
             // Now start the scan
             document.getElementById('statusText').textContent = 'Starting scan...';
+            console.log('Starting scan on', monitorInterface);
 
             try {
                 const scanResp = await fetch('/wifi/scan/start', {
@@ -4583,6 +4622,7 @@
                     })
                 });
                 const scanData = await scanResp.json();
+                console.log('Scan response:', scanData);
 
                 if (scanData.status === 'started') {
                     setWifiRunning(true);
@@ -4592,11 +4632,14 @@
                     document.getElementById('statusText').textContent = 'Idle';
                     document.getElementById('statusDot').classList.remove('running');
                     showNotification('Scan Error', scanData.message || 'Failed to start scan');
+                    alert('Scan failed: ' + (scanData.message || 'Unknown error'));
                 }
             } catch (err) {
+                console.error('Scan error:', err);
                 document.getElementById('statusText').textContent = 'Idle';
                 document.getElementById('statusDot').classList.remove('running');
                 showNotification('Scan Error', err.message);
+                alert('Scan error: ' + err.message);
             }
         }
 
@@ -6934,6 +6977,8 @@
             requestAnimationFrame(() => {
                 updateAdsbStats();
                 updateAircraftMarkers();
+                updateAircraftListPanel();
+                updateSelectedAircraftInfo();
                 // Batch output updates - only show last 10 to prevent DOM explosion
                 const toOutput = pendingAircraftData.slice(-10);
                 pendingAircraftData = [];
@@ -6986,6 +7031,97 @@
             document.getElementById('aircraftCount').textContent = count;
             document.getElementById('adsbMsgCount').textContent = adsbMsgCount;
             document.getElementById('icaoCount').textContent = count;
+        }
+
+        // Update aircraft list panel in main tab
+        function updateAircraftListPanel() {
+            const listPanel = document.getElementById('aircraftListPanel');
+            if (!listPanel) return;
+
+            const aircraft = Object.entries(adsbAircraft)
+                .filter(([_, a]) => a.lat != null && a.lon != null)
+                .sort((a, b) => (b[1].altitude || 0) - (a[1].altitude || 0))
+                .slice(0, 20);
+
+            if (aircraft.length === 0) {
+                listPanel.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No aircraft detected</div>';
+                return;
+            }
+
+            listPanel.innerHTML = aircraft.map(([icao, a]) => {
+                const isSelected = selectedMainAircraft === icao;
+                const militaryInfo = isMilitaryAircraft ? isMilitaryAircraft(icao, a.callsign) : { military: false };
+                const bgColor = isSelected ? 'rgba(0, 212, 255, 0.2)' : 'transparent';
+                const borderColor = isSelected ? 'var(--accent-cyan)' : 'var(--border-color)';
+                const typeColor = militaryInfo.military ? '#556b2f' : 'var(--accent-cyan)';
+
+                return `
+                    <div onclick="selectMainAircraft('${icao}')" style="padding: 8px; margin-bottom: 5px; background: ${bgColor}; border: 1px solid ${borderColor}; cursor: pointer; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: ${typeColor}; font-weight: bold;">${a.callsign || icao}</span>
+                            <span style="color: var(--text-muted); font-size: 10px;">${a.altitude ? Math.round(a.altitude).toLocaleString() + ' ft' : '--'}</span>
+                        </div>
+                        <div style="color: var(--text-dim); font-size: 10px; margin-top: 3px;">
+                            ${a.registration || ''} ${a.type || ''} ${militaryInfo.military ? '🎖️' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select an aircraft in main tab
+        function selectMainAircraft(icao) {
+            selectedMainAircraft = icao;
+            updateAircraftListPanel();
+            updateSelectedAircraftInfo();
+
+            // Center map on aircraft
+            const aircraft = adsbAircraft[icao];
+            if (aircraft && aircraft.lat && aircraft.lon && aircraftMap) {
+                aircraftMap.setView([aircraft.lat, aircraft.lon], 10);
+            }
+        }
+
+        // Update selected aircraft info panel
+        function updateSelectedAircraftInfo() {
+            const infoPanel = document.getElementById('selectedAircraftInfo');
+            if (!infoPanel) return;
+
+            if (!selectedMainAircraft || !adsbAircraft[selectedMainAircraft]) {
+                infoPanel.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Click an aircraft to view details</div>';
+                return;
+            }
+
+            const a = adsbAircraft[selectedMainAircraft];
+            const militaryInfo = isMilitaryAircraft ? isMilitaryAircraft(selectedMainAircraft, a.callsign) : { military: false };
+
+            infoPanel.innerHTML = `
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <div style="font-size: 24px; color: var(--accent-cyan); font-weight: bold;">${a.callsign || selectedMainAircraft}</div>
+                    ${a.registration ? `<div style="color: var(--text-secondary);">${a.registration}</div>` : ''}
+                    ${militaryInfo.military ? '<div style="color: #556b2f; font-size: 10px;">🎖️ MILITARY</div>' : ''}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                        <div style="color: var(--text-dim); font-size: 9px;">ALTITUDE</div>
+                        <div style="color: var(--accent-cyan);">${a.altitude ? Math.round(a.altitude).toLocaleString() + ' ft' : '--'}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                        <div style="color: var(--text-dim); font-size: 9px;">SPEED</div>
+                        <div style="color: var(--accent-cyan);">${a.speed ? Math.round(a.speed) + ' kts' : '--'}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                        <div style="color: var(--text-dim); font-size: 9px;">HEADING</div>
+                        <div style="color: var(--accent-cyan);">${a.heading ? Math.round(a.heading) + '°' : '--'}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                        <div style="color: var(--text-dim); font-size: 9px;">SQUAWK</div>
+                        <div style="color: var(--accent-cyan);">${a.squawk || '--'}</div>
+                    </div>
+                </div>
+                ${a.type ? `<div style="margin-top: 8px; color: var(--text-dim); font-size: 10px; text-align: center;">Aircraft: ${a.type}</div>` : ''}
+                <div style="margin-top: 8px; color: var(--text-dim); font-size: 9px; text-align: center;">ICAO: ${selectedMainAircraft}</div>
+            `;
         }
 
         function addAircraftToOutput(aircraft) {
