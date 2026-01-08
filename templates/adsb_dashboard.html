@@ -298,10 +298,43 @@
         ];
 
         const SQUAWK_CODES = {
-            '7500': { type: 'hijack', name: 'HIJACK' },
-            '7600': { type: 'radio', name: 'RADIO FAILURE' },
-            '7700': { type: 'mayday', name: 'EMERGENCY' }
+            // Emergency codes
+            '7500': { type: 'emergency', name: 'HIJACK', desc: 'Aircraft is being hijacked', color: '#ff0000' },
+            '7600': { type: 'emergency', name: 'RADIO FAILURE', desc: 'Lost communication with ATC', color: '#ff6600' },
+            '7700': { type: 'emergency', name: 'EMERGENCY', desc: 'General emergency (mayday)', color: '#ff0000' },
+            // Special codes
+            '7777': { type: 'special', name: 'MILITARY INTERCEPT', desc: 'Military interceptor operations', color: '#ff00ff' },
+            '7000': { type: 'vfr', name: 'VFR (EU)', desc: 'Visual Flight Rules - Europe', color: '#00d4ff' },
+            '1200': { type: 'vfr', name: 'VFR (US/CA)', desc: 'Visual Flight Rules - North America', color: '#00d4ff' },
+            '2000': { type: 'standard', name: 'UNASSIGNED', desc: 'No assigned code / entering controlled airspace', color: '#888888' },
+            '1000': { type: 'standard', name: 'IFR (EU)', desc: 'Instrument Flight Rules with no assigned code', color: '#00ff88' },
+            '0000': { type: 'special', name: 'DISCRETE', desc: 'Military/special operations', color: '#ff00ff' },
+            '4000': { type: 'special', name: 'FERRY/DELIVERY', desc: 'Aircraft ferry/delivery flight', color: '#ffaa00' },
+            '5000': { type: 'special', name: 'MILITARY (UK)', desc: 'UK military operations', color: '#556b2f' },
+            '0033': { type: 'special', name: 'PARACHUTE OPS', desc: 'Parachute dropping in progress', color: '#ffaa00' },
+            '7001': { type: 'special', name: 'VFR INTRUSION', desc: 'VFR aircraft entering controlled airspace', color: '#ffaa00' },
+            '7004': { type: 'special', name: 'AEROBATIC', desc: 'Aerobatic flight display', color: '#00d4ff' },
+            '7010': { type: 'special', name: 'RADIO EQUIPPED', desc: 'IFR flight (UK zones)', color: '#00ff88' }
         };
+
+        const SQUAWK_REFERENCE = [
+            { code: '7500', name: 'Hijack', desc: 'Aircraft is being hijacked - do not acknowledge' },
+            { code: '7600', name: 'Radio Failure', desc: 'Two-way radio communication failure' },
+            { code: '7700', name: 'Emergency', desc: 'General emergency (mayday/pan-pan)' },
+            { code: '7777', name: 'Military Intercept', desc: 'Active military intercept operations' },
+            { code: '---', name: '---', desc: '---' },
+            { code: '1200', name: 'VFR (US/Canada)', desc: 'Visual flight rules - North America' },
+            { code: '7000', name: 'VFR (Europe)', desc: 'Visual flight rules - ICAO/Europe' },
+            { code: '2000', name: 'Conspicuity', desc: 'Entering airspace, no code assigned' },
+            { code: '1000', name: 'IFR (Europe)', desc: 'Instrument flight rules, no code assigned' },
+            { code: '---', name: '---', desc: '---' },
+            { code: '0000', name: 'Discrete', desc: 'Military/special operations' },
+            { code: '0033', name: 'Parachute Ops', desc: 'Parachute dropping operations' },
+            { code: '4000', name: 'Ferry Flight', desc: 'Aircraft delivery/repositioning' },
+            { code: '5000', name: 'Military (UK)', desc: 'UK military low-level operations' },
+            { code: '7001', name: 'VFR Intrusion', desc: 'VFR aircraft entering controlled space' },
+            { code: '7004', name: 'Aerobatic', desc: 'Aerobatic display flight' }
+        ];
 
         function isMilitaryAircraft(icao, callsign) {
             const icaoNum = parseInt(icao, 16);
@@ -1607,7 +1640,7 @@ sudo make install</code>
                     </div>
                     <div class="telemetry-item">
                         <div class="telemetry-label">Squawk</div>
-                        <div class="telemetry-value">${squawk}</div>
+                        <div class="telemetry-value squawk-clickable" onclick="showSquawkInfo('${squawk}')" title="Click for squawk info">${squawk}</div>
                     </div>
                     <div class="telemetry-item">
                         <div class="telemetry-label">Lat</div>
@@ -2062,6 +2095,221 @@ sudo make install</code>
 
         // Initialize airband on page load
         document.addEventListener('DOMContentLoaded', initAirband);
+
+        // ============================================
+        // SQUAWK CODE REFERENCE
+        // ============================================
+        function showSquawkInfo(code) {
+            const modal = document.getElementById('squawkModal');
+            const codeInfo = document.getElementById('squawkCodeInfo');
+            const refTable = document.getElementById('squawkRefTable');
+
+            // Show info for the clicked code
+            let infoHtml = '';
+            if (code && code !== 'N/A' && SQUAWK_CODES[code]) {
+                const info = SQUAWK_CODES[code];
+                infoHtml = `
+                    <div class="squawk-current">
+                        <div class="squawk-current-code" style="color: ${info.color}">${code}</div>
+                        <div class="squawk-current-name">${info.name}</div>
+                        <div class="squawk-current-desc">${info.desc}</div>
+                    </div>
+                `;
+            } else if (code && code !== 'N/A') {
+                infoHtml = `
+                    <div class="squawk-current">
+                        <div class="squawk-current-code">${code}</div>
+                        <div class="squawk-current-name">ASSIGNED CODE</div>
+                        <div class="squawk-current-desc">Discrete code assigned by ATC for identification</div>
+                    </div>
+                `;
+            }
+            codeInfo.innerHTML = infoHtml;
+
+            // Build reference table
+            let tableHtml = '';
+            SQUAWK_REFERENCE.forEach(item => {
+                if (item.code === '---') {
+                    tableHtml += `<tr class="squawk-divider"><td colspan="3"></td></tr>`;
+                } else {
+                    const isEmergency = ['7500', '7600', '7700'].includes(item.code);
+                    tableHtml += `
+                        <tr class="${isEmergency ? 'emergency' : ''}">
+                            <td class="squawk-code">${item.code}</td>
+                            <td class="squawk-name">${item.name}</td>
+                            <td class="squawk-desc">${item.desc}</td>
+                        </tr>
+                    `;
+                }
+            });
+            refTable.innerHTML = tableHtml;
+
+            modal.classList.add('active');
+        }
+
+        function closeSquawkModal() {
+            document.getElementById('squawkModal').classList.remove('active');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('squawkModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'squawkModal') closeSquawkModal();
+        });
     </script>
+
+    <!-- Squawk Code Reference Modal -->
+    <div id="squawkModal" class="squawk-modal">
+        <div class="squawk-modal-content">
+            <div class="squawk-modal-header">
+                <span>SQUAWK CODE REFERENCE</span>
+                <button class="squawk-modal-close" onclick="closeSquawkModal()">&times;</button>
+            </div>
+            <div id="squawkCodeInfo"></div>
+            <div class="squawk-ref-container">
+                <table class="squawk-ref-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="squawkRefTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .squawk-clickable {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 2px;
+        }
+        .squawk-clickable:hover {
+            color: var(--accent-cyan);
+        }
+        .squawk-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .squawk-modal.active {
+            display: flex;
+        }
+        .squawk-modal-content {
+            background: var(--bg-secondary, #1a1a1a);
+            border: 1px solid var(--border-color, #333);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .squawk-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-tertiary, #252525);
+            border-bottom: 1px solid var(--border-color, #333);
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+        }
+        .squawk-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary, #888);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        .squawk-modal-close:hover {
+            color: #fff;
+        }
+        .squawk-current {
+            padding: 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color, #333);
+            background: var(--bg-tertiary, #252525);
+        }
+        .squawk-current-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .squawk-current-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+            color: var(--text-primary, #fff);
+        }
+        .squawk-current-desc {
+            font-size: 11px;
+            color: var(--text-secondary, #888);
+            margin-top: 4px;
+        }
+        .squawk-ref-container {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .squawk-ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .squawk-ref-table th {
+            background: var(--bg-tertiary, #252525);
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary, #888);
+            position: sticky;
+            top: 0;
+        }
+        .squawk-ref-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color, #222);
+        }
+        .squawk-ref-table tr:hover {
+            background: var(--bg-tertiary, #252525);
+        }
+        .squawk-ref-table tr.emergency {
+            background: rgba(255, 0, 0, 0.1);
+        }
+        .squawk-ref-table tr.emergency:hover {
+            background: rgba(255, 0, 0, 0.2);
+        }
+        .squawk-ref-table .squawk-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            color: var(--accent-cyan, #00d4ff);
+        }
+        .squawk-ref-table tr.emergency .squawk-code {
+            color: #ff4444;
+        }
+        .squawk-ref-table .squawk-name {
+            font-weight: 500;
+            color: var(--text-primary, #fff);
+        }
+        .squawk-ref-table .squawk-desc {
+            color: var(--text-secondary, #888);
+        }
+        .squawk-ref-table tr.squawk-divider td {
+            padding: 4px;
+            border-bottom: 1px solid var(--border-color, #444);
+        }
+    </style>
 </body>
 </html>
