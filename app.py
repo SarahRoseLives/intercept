@@ -103,6 +103,12 @@ satellite_process = None
 satellite_queue = queue.Queue(maxsize=QUEUE_MAX_SIZE)
 satellite_lock = threading.Lock()
 
+# RTLAMR smart meter
+rtlamr_process = None
+rtl_tcp_process = None
+rtlamr_queue = queue.Queue(maxsize=QUEUE_MAX_SIZE)
+rtlamr_lock = threading.Lock()
+
 # ============================================
 # GLOBAL STATE DICTIONARIES
 # ============================================
@@ -146,7 +152,8 @@ def index() -> str:
     tools = {
         'rtl_fm': check_tool('rtl_fm'),
         'multimon': check_tool('multimon-ng'),
-        'rtl_433': check_tool('rtl_433')
+        'rtl_433': check_tool('rtl_433'),
+        'rtlamr': check_tool('rtlamr')
     }
     devices = [d.to_dict() for d in SDRFactory.detect_devices()]
     return render_template('index.html', tools=tools, devices=devices, version=VERSION)
@@ -304,6 +311,7 @@ def health_check() -> Response:
             'adsb': adsb_process is not None and (adsb_process.poll() is None if adsb_process else False),
             'wifi': wifi_process is not None and (wifi_process.poll() is None if wifi_process else False),
             'bluetooth': bt_process is not None and (bt_process.poll() is None if bt_process else False),
+            'rtlamr': rtlamr_process is not None and (rtlamr_process.poll() is None if rtlamr_process else False),
         },
         'data': {
             'aircraft_count': len(adsb_aircraft),
@@ -317,7 +325,7 @@ def health_check() -> Response:
 @app.route('/killall', methods=['POST'])
 def kill_all() -> Response:
     """Kill all decoder and WiFi processes."""
-    global current_process, sensor_process, wifi_process, adsb_process
+    global current_process, sensor_process, wifi_process, adsb_process, rtlamr_process, rtl_tcp_process
 
     # Import adsb module to reset its state
     from routes import adsb as adsb_module
@@ -326,7 +334,7 @@ def kill_all() -> Response:
     processes_to_kill = [
         'rtl_fm', 'multimon-ng', 'rtl_433',
         'airodump-ng', 'aireplay-ng', 'airmon-ng',
-        'dump1090'
+        'dump1090', 'rtlamr', 'rtl_tcp'
     ]
 
     for proc in processes_to_kill:
@@ -350,6 +358,11 @@ def kill_all() -> Response:
     with adsb_lock:
         adsb_process = None
         adsb_module.adsb_using_service = False
+
+    # Reset RTLAMR state
+    with rtlamr_lock:
+        rtlamr_process = None
+        rtl_tcp_process = None
 
     return jsonify({'status': 'killed', 'processes': killed})
 
@@ -403,7 +416,7 @@ def main() -> None:
 
     print("=" * 50)
     print("  INTERCEPT // Signal Intelligence")
-    print("  Pager / 433MHz / Aircraft / Satellite / WiFi / BT")
+    print("  Pager / 433MHz / Aircraft / Satellite / WiFi / BT / Smart Meters")
     print("=" * 50)
     print()
 

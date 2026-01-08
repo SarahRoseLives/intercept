@@ -138,6 +138,8 @@ check_tools() {
   check_required "rtl_test"    "RTL-SDR device detection" rtl_test
   check_required "multimon-ng" "Pager decoder" multimon-ng
   check_required "rtl_433"     "433MHz sensor decoder" rtl_433 rtl433
+  check_required "rtl_tcp"     "RTL-SDR TCP server" rtl_tcp
+  check_required "rtlamr"      "Smart meter decoder" rtlamr
   check_required "dump1090"    "ADS-B decoder" dump1090
 
   echo
@@ -247,7 +249,7 @@ brew_install() {
 }
 
 install_macos_packages() {
-  TOTAL_STEPS=12
+  TOTAL_STEPS=15
   CURRENT_STEP=0
 
   progress "Checking Homebrew"
@@ -280,8 +282,77 @@ install_macos_packages() {
   progress "Installing gpsd"
   brew_install gpsd
 
+  progress "Installing Go"
+  ensure_go
+
+  progress "Installing rtlamr"
+  install_rtlamr
+
   warn "macOS note: hcitool/hciconfig are Linux (BlueZ) utilities and often unavailable on macOS."
   echo
+}
+
+# ----------------------------
+# Go installation and rtlamr
+# ----------------------------
+ensure_go() {
+  if cmd_exists go; then
+    ok "Go already installed: $(go version | awk '{print $3}')"
+    return 0
+  fi
+  
+  warn "Go not found. Installing Go compiler..."
+  
+  if [[ "$OS" == "macos" ]]; then
+    brew_install go
+  else
+    # Debian/Ubuntu
+    $SUDO apt-get install -y golang-go >/dev/null || {
+      warn "Failed to install Go via apt. Trying snap..."
+      $SUDO snap install go --classic >/dev/null 2>&1 || {
+        fail "Failed to install Go. Please install manually."
+        return 1
+      }
+    }
+  fi
+  
+  cmd_exists go || { fail "Go installation failed."; return 1; }
+  ok "Go installed: $(go version | awk '{print $3}')"
+}
+
+install_rtlamr() {
+  if cmd_exists rtlamr; then
+    ok "rtlamr already installed"
+    return 0
+  fi
+  
+  info "Building rtlamr from source..."
+  ensure_go || return 1
+  
+  # Run in subshell to isolate EXIT trap
+  (
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' EXIT
+    
+    export GOPATH="$tmp_dir/go"
+    export PATH="$GOPATH/bin:$PATH"
+    
+    info "Downloading rtlamr..."
+    go install github.com/bemasher/rtlamr@latest >/dev/null 2>&1 || {
+      fail "Failed to download rtlamr"
+      exit 1
+    }
+    
+    info "Installing rtlamr to /usr/local/bin..."
+    if [[ -f "$GOPATH/bin/rtlamr" ]]; then
+      $SUDO install -m 0755 "$GOPATH/bin/rtlamr" /usr/local/bin/rtlamr
+      ok "rtlamr installed successfully"
+      exit 0
+    else
+      fail "rtlamr binary not found after build"
+      exit 1
+    fi
+  )
 }
 
 # ----------------------------
@@ -362,7 +433,7 @@ install_debian_packages() {
   export DEBIAN_FRONTEND=noninteractive
   export NEEDRESTART_MODE=a
 
-  TOTAL_STEPS=16
+  TOTAL_STEPS=19
   CURRENT_STEP=0
 
   progress "Updating APT package lists"
@@ -406,6 +477,12 @@ install_debian_packages() {
     apt_try_install_any dump1090-fa dump1090-mutability dump1090 || true
   fi
   cmd_exists dump1090 || install_dump1090_from_source_debian
+
+  progress "Installing Go"
+  ensure_go
+
+  progress "Installing rtlamr"
+  install_rtlamr
 
   progress "Configuring udev rules"
   setup_udev_rules_debian

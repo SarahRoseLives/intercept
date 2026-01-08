@@ -151,6 +151,24 @@
                 </div>
             </div>
 
+            <!-- Smart Meter Stats -->
+            <div class="header-stats-group" id="headerSmartMeterStats">
+                <div class="stat-badge">
+                    <span class="badge-icon">⚡</span>
+                    <div>
+                        <span class="badge-value" id="headerMeterCount">0</span>
+                        <span class="badge-label">meters</span>
+                    </div>
+                </div>
+                <div class="stat-badge">
+                    <span class="badge-icon">📊</span>
+                    <div>
+                        <span class="badge-value" id="headerMeterReadingCount">0</span>
+                        <span class="badge-label">readings</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- WiFi Stats -->
             <div class="header-stats-group" id="headerWifiStats">
                 <div class="stat-badge">
@@ -253,6 +271,7 @@
             <span class="mode-nav-label">SDR / RF</span>
             <button class="mode-nav-btn active" onclick="switchMode('pager')"><span class="nav-icon">📟</span><span class="nav-label">Pager</span></button>
             <button class="mode-nav-btn" onclick="switchMode('sensor')"><span class="nav-icon">📡</span><span class="nav-label">433MHz</span></button>
+            <button class="mode-nav-btn" onclick="switchMode('smartmeter')"><span class="nav-icon">⚡</span><span class="nav-label">Smart Meter</span></button>
             <button class="mode-nav-btn" onclick="switchMode('aircraft')"><span class="nav-icon">✈️</span><span class="nav-label">Aircraft</span></button>
             <button class="mode-nav-btn" onclick="switchMode('satellite')"><span class="nav-icon">🛰️</span><span class="nav-label">Satellite</span></button>
             <button class="mode-nav-btn" onclick="switchMode('listening')"><span class="nav-icon">📻</span><span class="nav-label">Listening Post</span></button>
@@ -345,6 +364,10 @@
                     </div>
                     <div id="toolStatusSensor" class="info-text tool-status-section" style="display: none; grid-template-columns: auto auto; gap: 4px 8px; align-items: center;">
                         <span>rtl_433:</span><span class="tool-status {{ 'ok' if tools.rtl_433 else 'missing' }}">{{ 'OK' if tools.rtl_433 else 'Missing' }}</span>
+                    </div>
+                    <div id="toolStatusSmartMeter" class="info-text tool-status-section" style="display: none; grid-template-columns: auto auto; gap: 4px 8px; align-items: center;">
+                        <span>rtlamr:</span><span class="tool-status {{ 'ok' if tools.rtlamr else 'missing' }}">{{ 'OK' if tools.rtlamr else 'Missing' }}</span>
+                        <span>rtl_tcp:</span><span class="tool-status {{ 'ok' if tools.rtl_fm else 'missing' }}">{{ 'OK' if tools.rtl_fm else 'Missing' }}</span>
                     </div>
                     <div id="toolStatusAircraft" class="info-text tool-status-section" style="display: none; grid-template-columns: auto auto; gap: 4px 8px; align-items: center;">
                         <span>dump1090:</span><span id="dump1090StatusSidebar" class="tool-status">Checking...</span>
@@ -483,6 +506,85 @@
                     </button>
                     <button class="stop-btn" id="stopSensorBtn" onclick="stopSensorDecoding()" style="display: none;">
                         Stop Listening
+                    </button>
+                </div>
+
+                <!-- SMART METER MODE -->
+                <div id="smartMeterMode" class="mode-content">
+                    <div class="section">
+                        <h3>Frequency</h3>
+                        <div class="form-group">
+                            <label>Frequency (MHz)</label>
+                            <input type="text" id="smartMeterFrequency" value="912.6" placeholder="e.g., 912.6">
+                        </div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setSmartMeterFreq('912.6')">912.6</button>
+                            <button class="preset-btn" onclick="setSmartMeterFreq('915.0')">915.0</button>
+                            <button class="preset-btn" onclick="setSmartMeterFreq('902.0')">902.0</button>
+                            <button class="preset-btn" onclick="setSmartMeterFreq('928.0')">928.0</button>
+                        </div>
+                        <div class="info-text" style="margin-top: 8px;">
+                            Common North American smart meter frequencies
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Settings</h3>
+                        <div class="form-group">
+                            <label>Gain (dB, 0 = auto)</label>
+                            <input type="text" id="smartMeterGain" value="0" placeholder="0-49 or 0 for auto">
+                        </div>
+                        <div class="form-group">
+                            <label>PPM Correction</label>
+                            <input type="text" id="smartMeterPpm" value="0" placeholder="Frequency correction">
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Message Types</h3>
+                        <div class="info-text" style="margin-bottom: 10px;">
+                            Select meter protocols to decode:
+                        </div>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="msgTypeSCM" checked>
+                                SCM (Standard Consumption Message)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="msgTypeSCMPlus" checked>
+                                SCM+ (Enhanced SCM)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="msgTypeIDM" checked>
+                                IDM (Interval Data Message)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="msgTypeNetIDM" checked>
+                                NetIDM (Networked IDM)
+                            </label>
+                            <label>
+                                <input type="checkbox" id="msgTypeR900" checked>
+                                R900 (Sensus Protocol)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Filters</h3>
+                        <div class="form-group">
+                            <label>Filter by Meter ID (optional)</label>
+                            <input type="text" id="smartMeterFilterID" placeholder="e.g., 12345678">
+                        </div>
+                        <div class="info-text" style="margin-top: 5px;">
+                            Leave empty to monitor all meters
+                        </div>
+                    </div>
+
+                    <button class="run-btn" id="startSmartMeterBtn" onclick="startSmartMeterMonitoring()">
+                        Start Monitoring
+                    </button>
+                    <button class="stop-btn" id="stopSmartMeterBtn" onclick="stopSmartMeterMonitoring()" style="display: none;">
+                        Stop Monitoring
                     </button>
                 </div>
 
@@ -1154,6 +1256,10 @@
                         <div class="stats" id="sensorStats" style="display: none;">
                             <div title="Unique Sensors">🌡️ <span id="sensorCount">0</span></div>
                             <div title="Device Types">📊 <span id="deviceCount">0</span></div>
+                        </div>
+                        <div class="stats" id="smartMeterStats" style="display: none;">
+                            <div title="Unique Meters">⚡ <span id="meterCount">0</span></div>
+                            <div title="Total Readings">📊 <span id="readingCount">0</span></div>
                         </div>
                         <div class="stats" id="wifiStats" style="display: none;">
                             <div title="Access Points">📡 <span id="apCount">0</span></div>
@@ -1897,6 +2003,10 @@
             document.getElementById('headerSensorCount').textContent = document.getElementById('sensorCount')?.textContent || '0';
             document.getElementById('headerDeviceTypeCount').textContent = document.getElementById('deviceCount')?.textContent || '0';
 
+            // Smart meter stats
+            document.getElementById('headerMeterCount').textContent = document.getElementById('meterCount')?.textContent || '0';
+            document.getElementById('headerMeterReadingCount').textContent = document.getElementById('readingCount')?.textContent || '0';
+
             // WiFi stats
             document.getElementById('headerApCount').textContent = document.getElementById('apCount')?.textContent || '0';
             document.getElementById('headerClientCount').textContent = document.getElementById('clientCount')?.textContent || '0';
@@ -2308,6 +2418,7 @@
             // Stop any running scans when switching modes
             if (isRunning) stopDecoding();
             if (isSensorRunning) stopSensorDecoding();
+            if (isSmartMeterRunning) stopSmartMeterMonitoring();
             if (isWifiRunning) stopWifiScan();
             if (isBtRunning) stopBtScan();
             if (isAdsbRunning) stopAdsbScan();
@@ -2316,7 +2427,7 @@
             // Remove active from all nav buttons, then add to the correct one
             document.querySelectorAll('.mode-nav-btn').forEach(btn => btn.classList.remove('active'));
             const modeMap = {
-                'pager': 'pager', 'sensor': '433', 'aircraft': 'aircraft',
+                'pager': 'pager', 'sensor': '433', 'smartmeter': 'smart meter', 'aircraft': 'aircraft',
                 'satellite': 'satellite', 'wifi': 'wifi', 'bluetooth': 'bluetooth',
                 'listening': 'listening'
             };
@@ -2328,6 +2439,7 @@
             });
             document.getElementById('pagerMode').classList.toggle('active', mode === 'pager');
             document.getElementById('sensorMode').classList.toggle('active', mode === 'sensor');
+            document.getElementById('smartMeterMode').classList.toggle('active', mode === 'smartmeter');
             document.getElementById('aircraftMode').classList.toggle('active', mode === 'aircraft');
             document.getElementById('satelliteMode').classList.toggle('active', mode === 'satellite');
             document.getElementById('wifiMode').classList.toggle('active', mode === 'wifi');
@@ -2335,6 +2447,7 @@
             document.getElementById('listeningPostMode').classList.toggle('active', mode === 'listening');
             document.getElementById('pagerStats').style.display = mode === 'pager' ? 'flex' : 'none';
             document.getElementById('sensorStats').style.display = mode === 'sensor' ? 'flex' : 'none';
+            document.getElementById('smartMeterStats').style.display = mode === 'smartmeter' ? 'flex' : 'none';
             document.getElementById('aircraftStats').style.display = mode === 'aircraft' ? 'flex' : 'none';
             document.getElementById('satelliteStats').style.display = mode === 'satellite' ? 'flex' : 'none';
             document.getElementById('wifiStats').style.display = mode === 'wifi' ? 'flex' : 'none';
@@ -2346,6 +2459,7 @@
             // Update header stats groups
             document.getElementById('headerPagerStats').classList.toggle('active', mode === 'pager');
             document.getElementById('headerSensorStats').classList.toggle('active', mode === 'sensor');
+            document.getElementById('headerSmartMeterStats').classList.toggle('active', mode === 'smartmeter');
             document.getElementById('headerAircraftStats').classList.toggle('active', mode === 'aircraft');
             document.getElementById('headerSatelliteStats').classList.toggle('active', mode === 'satellite');
             document.getElementById('headerWifiStats').classList.toggle('active', mode === 'wifi');
@@ -2359,6 +2473,7 @@
             const modeNames = {
                 'pager': 'PAGER',
                 'sensor': '433MHZ',
+                'smartmeter': 'SMART METER',
                 'aircraft': 'AIRCRAFT',
                 'satellite': 'SATELLITE',
                 'wifi': 'WIFI',
@@ -2378,6 +2493,7 @@
             const titles = {
                 'pager': 'Pager Decoder',
                 'sensor': '433MHz Sensor Monitor',
+                'smartmeter': 'Smart Meter Monitor',
                 'aircraft': 'ADS-B Aircraft Tracker',
                 'satellite': 'Satellite Monitor',
                 'wifi': 'WiFi Scanner',
@@ -2403,11 +2519,12 @@
             }
 
             // Show RTL-SDR device section for modes that use it
-            document.getElementById('rtlDeviceSection').style.display = (mode === 'pager' || mode === 'sensor' || mode === 'aircraft' || mode === 'listening') ? 'block' : 'none';
+            document.getElementById('rtlDeviceSection').style.display = (mode === 'pager' || mode === 'sensor' || mode === 'smartmeter' || mode === 'aircraft' || mode === 'listening') ? 'block' : 'none';
 
             // Toggle mode-specific tool status displays
             document.getElementById('toolStatusPager').style.display = (mode === 'pager') ? 'grid' : 'none';
             document.getElementById('toolStatusSensor').style.display = (mode === 'sensor') ? 'grid' : 'none';
+            document.getElementById('toolStatusSmartMeter').style.display = (mode === 'smartmeter') ? 'grid' : 'none';
             document.getElementById('toolStatusAircraft').style.display = (mode === 'aircraft') ? 'grid' : 'none';
 
             // Hide waterfall and output console for modes with their own visualizations
@@ -2608,6 +2725,203 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({enabled: enabled, log_file: 'sensor_data.log'})
             });
+        }
+
+        // ============================
+        // SMART METER FUNCTIONS
+        // ============================
+        let isSmartMeterRunning = false;
+        let meterCount = 0;
+        let readingCount = 0;
+        let uniqueMeters = new Set();
+
+        function setSmartMeterFreq(freq) {
+            document.getElementById('smartMeterFrequency').value = freq;
+        }
+
+        function startSmartMeterMonitoring() {
+            console.log('startSmartMeterMonitoring called');
+            const freq = document.getElementById('smartMeterFrequency').value;
+            const gain = document.getElementById('smartMeterGain').value;
+            const ppm = document.getElementById('smartMeterPpm').value;
+            const device = getSelectedDevice();
+            const filterID = document.getElementById('smartMeterFilterID').value;
+
+            console.log('Device:', device, 'Freq:', freq);
+
+            // Check if device is available
+            if (!checkDeviceAvailability('smartmeter')) {
+                console.log('Device not available');
+                return;
+            }
+
+            console.log('Device available, collecting message types');
+
+            // Collect selected message types
+            const msgTypes = [];
+            if (document.getElementById('msgTypeSCM').checked) msgTypes.push('scm');
+            if (document.getElementById('msgTypeSCMPlus').checked) msgTypes.push('scm+');
+            if (document.getElementById('msgTypeIDM').checked) msgTypes.push('idm');
+            if (document.getElementById('msgTypeNetIDM').checked) msgTypes.push('netidm');
+            if (document.getElementById('msgTypeR900').checked) msgTypes.push('r900');
+
+            console.log('Message types:', msgTypes);
+
+            if (msgTypes.length === 0) {
+                showError('Please select at least one message type');
+                return;
+            }
+
+            showInfo('Starting smart meter monitoring...');
+            setSmartMeterRunning(true);
+
+            console.log('Sending request to /start_rtlamr');
+
+            try {
+                fetch('/start_rtlamr', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        frequency: freq,
+                        gain: gain,
+                        ppm: ppm,
+                        device: device,
+                        msgTypes: msgTypes,
+                        filterID: filterID
+                    })
+                })
+                .then(r => {
+                    console.log('Got response:', r.status);
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('Response:', data);
+                    if (data.status === 'started') {
+                        showInfo('Smart meter monitoring started');
+                        startSmartMeterStream();
+                    } else {
+                        showError(data.message || 'Failed to start monitoring');
+                        setSmartMeterRunning(false);
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    showError('Error: ' + err);
+                    setSmartMeterRunning(false);
+                });
+            } catch (e) {
+                console.error('Exception during fetch:', e);
+                showError('Exception: ' + e.message);
+                setSmartMeterRunning(false);
+            }
+        }
+
+        function stopSmartMeterMonitoring() {
+            fetch('/stop_rtlamr', {method: 'POST'})
+                .then(r => r.json())
+                .then(data => {
+                    setSmartMeterRunning(false);
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                });
+        }
+
+        function setSmartMeterRunning(running) {
+            isSmartMeterRunning = running;
+            document.getElementById('statusDot').classList.toggle('running', running);
+            document.getElementById('statusText').textContent = running ? 'Monitoring...' : 'Idle';
+            document.getElementById('startSmartMeterBtn').style.display = running ? 'none' : 'block';
+            document.getElementById('stopSmartMeterBtn').style.display = running ? 'block' : 'none';
+        }
+
+        function startSmartMeterStream() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource('/rtlamr_stream');
+
+            eventSource.onopen = function() {
+                showInfo('Smart meter stream connected...');
+            };
+
+            eventSource.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                if (data.type === 'smartmeter') {
+                    addMeterReading(data);
+                } else if (data.type === 'status') {
+                    if (data.text === 'stopped') {
+                        setSmartMeterRunning(false);
+                    }
+                } else if (data.type === 'info' || data.type === 'raw') {
+                    showInfo(data.text);
+                }
+            };
+
+            eventSource.onerror = function(e) {
+                console.error('Smart meter stream error');
+            };
+        }
+
+        function addMeterReading(data) {
+            const output = document.getElementById('output');
+            const placeholder = output.querySelector('.placeholder');
+            if (placeholder) placeholder.remove();
+
+            // Store for export
+            allMessages.push(data);
+            playAlert();
+            pulseSignal();
+            addWaterfallPoint(Date.now(), 0.8);
+
+            readingCount++;
+            document.getElementById('readingCount').textContent = readingCount;
+
+            // Track unique meters
+            const meterID = data.Message?.ID || data.ID || 'unknown';
+            if (!uniqueMeters.has(meterID)) {
+                uniqueMeters.add(meterID);
+                meterCount = uniqueMeters.size;
+                document.getElementById('meterCount').textContent = meterCount;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'sensor-card';
+
+            const msgData = data.Message || data;
+            const msgType = data.Type || 'Unknown';
+            const timestamp = new Date().toLocaleTimeString();
+
+            let dataItems = `<div style="margin-bottom: 8px;"><strong>Type:</strong> ${msgType}</div>`;
+            
+            const skipKeys = ['type', 'Type', 'Message'];
+            for (const [key, value] of Object.entries(msgData)) {
+                if (!skipKeys.includes(key) && value !== null && value !== undefined) {
+                    const label = key.replace(/_/g, ' ');
+                    let displayValue = value;
+                    if (typeof value === 'object') {
+                        displayValue = JSON.stringify(value);
+                    }
+                    dataItems += `<div><strong>${label}:</strong> ${displayValue}</div>`;
+                }
+            }
+
+            card.innerHTML = 
+                '<div class="message-header">' +
+                '<span class="message-icon">⚡</span>' +
+                '<strong>Meter ID: ' + meterID + '</strong>' +
+                '<span class="timestamp">' + timestamp + '</span>' +
+                '</div>' +
+                '<div class="sensor-data">' + dataItems + '</div>';
+
+            output.insertBefore(card, output.firstChild);
+
+            if (autoScroll) output.scrollTop = 0;
+            while (output.children.length > 100) {
+                output.removeChild(output.lastChild);
+            }
         }
 
         // Audio alert settings

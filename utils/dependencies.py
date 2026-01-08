@@ -80,6 +80,29 @@ TOOL_DEPENDENCIES = {
             }
         }
     },
+    'smartmeter': {
+        'name': 'Smart Meter Reading',
+        'tools': {
+            'rtlamr': {
+                'required': True,
+                'description': 'Smart meter data decoder (SCM, SCM+, IDM, NetIDM, R900)',
+                'install': {
+                    'apt': 'sudo apt install golang-go && go install github.com/bemasher/rtlamr@latest',
+                    'brew': 'brew install go && go install github.com/bemasher/rtlamr@latest',
+                    'manual': 'https://github.com/bemasher/rtlamr'
+                }
+            },
+            'rtl_tcp': {
+                'required': True,
+                'description': 'RTL-SDR TCP server (required for rtlamr)',
+                'install': {
+                    'apt': 'sudo apt install rtl-sdr',
+                    'brew': 'brew install librtlsdr',
+                    'manual': 'https://osmocom.org/projects/rtl-sdr/wiki'
+                }
+            }
+        }
+    },
     'wifi': {
         'name': 'WiFi Reconnaissance',
         'tools': {

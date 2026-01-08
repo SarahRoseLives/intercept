@@ -12,6 +12,7 @@ def register_blueprints(app):
     from .settings import settings_bp
     from .correlation import correlation_bp
     from .listening_post import listening_post_bp
+    from .rtlamr import rtlamr_bp
 
     app.register_blueprint(pager_bp)
     app.register_blueprint(sensor_bp)
@@ -23,3 +24,4 @@ def register_blueprints(app):
     app.register_blueprint(settings_bp)
     app.register_blueprint(correlation_bp)
     app.register_blueprint(listening_post_bp)
+    app.register_blueprint(rtlamr_bp)
