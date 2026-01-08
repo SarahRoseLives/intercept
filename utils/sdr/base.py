@@ -93,7 +93,8 @@ class CommandBuilder(ABC):
         gain: Optional[float] = None,
         ppm: Optional[int] = None,
         modulation: str = "fm",
-        squelch: Optional[int] = None
+        squelch: Optional[int] = None,
+        bias_t: bool = False
     ) -> list[str]:
         """
         Build FM demodulation command (for pager decoding).
@@ -106,6 +107,7 @@ class CommandBuilder(ABC):
             ppm: PPM frequency correction
             modulation: Modulation type (fm, am, etc.)
             squelch: Squelch level
+            bias_t: Enable bias-T power (for active antennas)
 
         Returns:
             Command as list of strings for subprocess

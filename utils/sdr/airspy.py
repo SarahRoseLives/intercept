@@ -64,7 +64,8 @@ class AirspyCommandBuilder(CommandBuilder):
         gain: Optional[float] = None,
         ppm: Optional[int] = None,
         modulation: str = "fm",
-        squelch: Optional[int] = None
+        squelch: Optional[int] = None,
+        bias_t: bool = False
     ) -> list[str]:
         """
         Build SoapySDR rx_fm command for FM demodulation.
@@ -86,6 +87,9 @@ class AirspyCommandBuilder(CommandBuilder):
 
         if squelch is not None and squelch > 0:
             cmd.extend(['-l', str(squelch)])
+
+        if bias_t:
+            cmd.extend(['-T'])
 
         # Output to stdout
         cmd.append('-')

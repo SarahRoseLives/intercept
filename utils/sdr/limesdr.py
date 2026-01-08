@@ -41,12 +41,14 @@ class LimeSDRCommandBuilder(CommandBuilder):
         gain: Optional[float] = None,
         ppm: Optional[int] = None,
         modulation: str = "fm",
-        squelch: Optional[int] = None
+        squelch: Optional[int] = None,
+        bias_t: bool = False
     ) -> list[str]:
         """
         Build SoapySDR rx_fm command for FM demodulation.
 
         For pager decoding with LimeSDR.
+        Note: LimeSDR does not support bias-T, parameter is ignored.
         """
         device_str = self._build_device_string(device)
 
