@@ -1,6 +1,36 @@
 # Changelog
 
-All notable changes to INTERCEPT will be documented in this file.
+All notable changes to iNTERCEPT will be documented in this file.
+
+## [2.9.0] - 2026-01-10
+
+### Added
+- **Landing Page** - Animated welcome screen with logo reveal and "See the Invisible" tagline
+- **New Branding** - Redesigned logo featuring 'i' with signal wave brackets
+- **Logo Assets** - Full-size SVG logos in `/static/img/` for external use
+- **Instagram Promo** - Animated HTML promo video template in `/promo/` directory
+- **Listening Post Scanner** - Fully functional frequency scanning with signal detection
+  - Scan button toggles between start/stop states
+  - Signal hits logged with Listen button to tune directly
+  - Proper 4-column display (Time, Frequency, Modulation, Action)
+
+### Changed
+- **Rebranding** - Application renamed from "INTERCEPT" to "iNTERCEPT"
+- **Updated Tagline** - "Signal Intelligence & Counter Surveillance Platform"
+- **Setup Script** - Now installs Python packages via apt first (more reliable on Debian/Ubuntu)
+  - Uses `--system-site-packages` for venv to leverage apt packages
+  - Added fallback logic when pip fails
+- **Troubleshooting Docs** - Added sections for pip install issues and apt alternatives
+
+### Fixed
+- **Tuning Dial Audio** - Fixed audio stopping when using tuning knob
+  - Added restart prevention flags to avoid overlapping restarts
+  - Increased debounce time for smoother operation
+  - Added silent mode for programmatic value changes
+- **Scanner Signal Hits** - Fixed table column count and colspan
+- **Favicon** - Updated to new 'i' logo design
+
+---
 
 ## [2.0.0] - 2026-01-06
 

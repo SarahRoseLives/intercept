@@ -14,6 +14,37 @@ pip install -r requirements.txt
 python3 -m pip install -r requirements.txt
 ```
 
+### pip install fails for flask or skyfield
+
+On newer Debian/Ubuntu systems, pip may fail with permission errors or dependency conflicts. **Use apt instead:**
+
+```bash
+# Install Python packages via apt (recommended for Debian/Ubuntu)
+sudo apt install python3-flask python3-requests python3-serial python3-skyfield
+
+# Then create venv with system packages
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+sudo venv/bin/python intercept.py
+```
+
+### "error: externally-managed-environment" (pip blocked)
+
+This is PEP 668 protection on Ubuntu 23.04+, Debian 12+, and similar systems. Solutions:
+
+```bash
+# Option 1: Use apt packages (recommended)
+sudo apt install python3-flask python3-requests python3-serial python3-skyfield
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+
+# Option 2: Use pipx for isolated install
+pipx install flask
+
+# Option 3: Force pip (not recommended)
+pip install --break-system-packages flask
+```
+
 ### "TypeError: 'type' object is not subscriptable"
 
 This error occurs on Python 3.7 or 3.8. **INTERCEPT requires Python 3.9 or later.**
@@ -33,18 +64,12 @@ pip install -r requirements.txt
 sudo venv/bin/python intercept.py
 ```
 
-### "externally-managed-environment" error (Ubuntu 23.04+, Debian 12+)
+### Alternative: Use the setup script
 
-Modern systems use PEP 668 to protect system Python. Use a virtual environment:
+The setup script handles all installation automatically, including apt packages:
 
 ```bash
-# Option 1: Virtual environment (recommended)
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-sudo venv/bin/python intercept.py
-
-# Option 2: Use the setup script (auto-creates venv if needed)
+chmod +x setup.sh
 ./setup.sh
 ```
 
@@ -160,6 +185,144 @@ which rx_fm
 ```
 
 If `rx_fm` is installed, select your device from the SDR dropdown in the Listening Post - HackRF, Airspy, LimeSDR, and SDRPlay are all supported.
+
+### Setting up Icecast for Listening Post Audio
+
+The Listening Post uses Icecast for low-latency audio streaming (2-10 second latency). Intercept will automatically start Icecast when you begin listening, but you must install and configure it first.
+
+**Install Icecast:**
+```bash
+# Ubuntu/Debian
+sudo apt install icecast2
+
+# macOS
+brew install icecast
+```
+
+**Configure Icecast:**
+
+During installation on Debian/Ubuntu, you'll be prompted to configure. Otherwise, edit `/etc/icecast2/icecast.xml`:
+
+```xml
+<icecast>
+    <authentication>
+        <!-- Source password - used by ffmpeg to send audio -->
+        <source-password>hackme</source-password>
+        <!-- Admin password for web interface -->
+        <admin-password>your-admin-password</admin-password>
+    </authentication>
+    <hostname>localhost</hostname>
+    <listen-socket>
+        <port>8000</port>
+    </listen-socket>
+</icecast>
+```
+
+**Start Icecast:**
+```bash
+# Ubuntu/Debian (as service)
+sudo systemctl enable icecast2
+sudo systemctl start icecast2
+
+# Or run directly
+icecast -c /etc/icecast2/icecast.xml
+
+# macOS
+brew services start icecast
+# Or: icecast -c /usr/local/etc/icecast.xml
+```
+
+**Verify Icecast is running:**
+- Open http://localhost:8000 in your browser
+- You should see the Icecast status page
+
+**Configure Intercept (optional):**
+
+The default configuration expects Icecast on `127.0.0.1:8000` with source password `hackme` and mount point `/listen.mp3`. To change these, modify the scanner config in your API calls or update the defaults in `routes/listening_post.py`:
+
+```python
+scanner_config = {
+    # ... other settings ...
+    'icecast_host': '127.0.0.1',
+    'icecast_port': 8000,
+    'icecast_mount': '/listen.mp3',
+    'icecast_source_password': 'hackme',
+}
+```
+
+**Troubleshooting Icecast:**
+
+- **"Connection refused" errors**: Ensure Icecast is running on the configured port
+- **"Authentication failed"**: Check the source password matches between Icecast config and Intercept
+- **No audio playing**: Check Icecast status page (http://localhost:8000) to verify the mount point is active
+- **High latency**: Ensure nginx/reverse proxy isn't buffering - add `proxy_buffering off;` to nginx config
+
+### Audio Streaming Issues - Detailed Debugging
+
+If the Listening Post shows "Icecast mount not active" errors or audio doesn't play:
+
+**1. Check the console output for errors**
+
+Intercept now logs detailed error output. Look for lines starting with `[AUDIO]`:
+```
+[AUDIO] SDR errors: ...     # Problems with rtl_fm/rx_fm (SDR not connected, device busy)
+[AUDIO] FFmpeg errors: ...  # Problems with ffmpeg (wrong password, codec issues)
+```
+
+**2. Verify SDR is connected and working**
+```bash
+# For RTL-SDR
+rtl_test -t
+
+# You should see: "Found 1 device(s)"
+# If not, check USB connection and drivers
+```
+
+**3. Check Icecast password (macOS Homebrew)**
+
+On macOS with Homebrew, the Icecast config is at `/opt/homebrew/etc/icecast.xml`. Check the source password:
+```bash
+grep source-password /opt/homebrew/etc/icecast.xml
+```
+
+If it's different from `hackme`, update it in the Listening Post Icecast config panel, or change the Icecast config and restart:
+```bash
+brew services restart icecast
+```
+
+**4. Verify ffmpeg has required codecs**
+```bash
+# Check MP3 encoder is available
+ffmpeg -encoders 2>/dev/null | grep mp3
+
+# Should show: libmp3lame
+# If not, reinstall ffmpeg with all codecs:
+# macOS: brew reinstall ffmpeg
+# Linux: sudo apt install ffmpeg
+```
+
+**5. Test the pipeline manually**
+
+Try running the audio pipeline directly to see errors:
+```bash
+# Test rtl_fm (should produce raw audio data)
+rtl_fm -M am -f 118000000 -s 24000 -r 24000 -g 40 2>&1 | head -c 1000 | xxd | head
+
+# Test ffmpeg to Icecast (replace PASSWORD with your source password)
+rtl_fm -M am -f 118000000 -s 24000 -r 24000 -g 40 2>/dev/null | \
+  ffmpeg -f s16le -ar 24000 -ac 1 -i pipe:0 -c:a libmp3lame -b:a 64k \
+  -f mp3 -content_type audio/mpeg icecast://source:PASSWORD@127.0.0.1:8000/listen.mp3
+```
+
+**6. Common error messages and solutions**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `No supported devices found` | SDR not connected | Plug in SDR, check USB |
+| `Device or resource busy` | Another process using SDR | Click "Kill All Processes" |
+| `401 Unauthorized` | Wrong Icecast password | Check password in Icecast config |
+| `Connection refused` | Icecast not running | Start Icecast service |
+| `Encoder libmp3lame not found` | ffmpeg missing codec | Reinstall ffmpeg with codecs |
 
 ## WiFi Issues
 

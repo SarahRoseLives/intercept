@@ -693,3 +693,35 @@ body {
         grid-row: 4;
     }
 }
+
+/* Embedded Mode Styles */
+body.embedded {
+    background: transparent;
+    min-height: auto;
+}
+
+body.embedded .header {
+    background: rgba(10, 12, 16, 0.95);
+    border-bottom: 1px solid var(--border-color);
+}
+
+body.embedded .header .logo {
+    font-size: 14px;
+}
+
+body.embedded .header .logo span {
+    font-size: 10px;
+}
+
+body.embedded .dashboard {
+    padding: 10px;
+    gap: 10px;
+}
+
+body.embedded .panel {
+    background: rgba(15, 18, 24, 0.95);
+}
+
+body.embedded .controls-bar {
+    padding: 10px 15px;
+}

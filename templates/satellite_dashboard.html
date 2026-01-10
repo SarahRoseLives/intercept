@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SATELLITE COMMAND // INTERCEPT - See the Invisible</title>
+    <title>SATELLITE COMMAND // iNTERCEPT - See the Invisible</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +16,7 @@
     <header class="header">
         <div class="logo">
             SATELLITE COMMAND
-            <span>// INTERCEPT - See the Invisible</span>
+            <span>// iNTERCEPT - See the Invisible</span>
         </div>
         <div class="stats-badges">
             <div class="stat-badge">
@@ -183,6 +183,10 @@
     </main>
 
     <script>
+        // Check if embedded mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const isEmbedded = urlParams.get('embedded') === 'true';
+
         // Dashboard state
         let passes = [];
         let selectedPass = null;
@@ -223,7 +227,29 @@
             calculatePasses();
         }
 
+        function setupEmbeddedMode() {
+            if (isEmbedded) {
+                // Hide back link when embedded
+                const backLink = document.querySelector('.back-link');
+                if (backLink) backLink.style.display = 'none';
+
+                // Add embedded class to body for CSS adjustments
+                document.body.classList.add('embedded');
+
+                // Compact the header slightly
+                const header = document.querySelector('.header');
+                if (header) header.style.padding = '10px 20px';
+
+                // Hide decorative elements
+                const gridBg = document.querySelector('.grid-bg');
+                const scanline = document.querySelector('.scanline');
+                if (gridBg) gridBg.style.display = 'none';
+                if (scanline) scanline.style.display = 'none';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            setupEmbeddedMode();
             initGroundMap();
             updateClock();
             setInterval(updateClock, 1000);
@@ -361,7 +387,7 @@
 
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
-            const radius = Math.min(cx, cy) - 40;
+            const radius = Math.max(10, Math.min(cx, cy) - 40);
 
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -720,7 +746,7 @@
 
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
-            const radius = Math.min(cx, cy) - 40;
+            const radius = Math.max(10, Math.min(cx, cy) - 40);
 
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -818,7 +844,7 @@
 
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
-            const radius = Math.min(cx, cy) - 40;
+            const radius = Math.max(10, Math.min(cx, cy) - 40);
 
             if (el > -5) {
                 const posEl = Math.max(0, el);

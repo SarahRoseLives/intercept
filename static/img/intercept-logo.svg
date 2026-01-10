@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- iNTERCEPT Logo - Signal Intelligence Platform -->
+
+    <!-- Signal brackets - left side (signal waves emanating) -->
+    <path d="M15 30 Q5 50, 15 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M22 35 Q14 50, 22 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M29 40 Q23 50, 29 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- Signal brackets - right side (signal waves emanating) -->
+    <path d="M85 30 Q95 50, 85 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M78 35 Q86 50, 78 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M71 40 Q77 50, 71 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- The 'i' letter - center element -->
+    <!-- dot of i (green accent - represents active signal) -->
+    <circle cx="50" cy="22" r="6" fill="#00ff88"/>
+
+    <!-- stem of i with styled terminals -->
+    <rect x="44" y="35" width="12" height="45" rx="2" fill="#00d4ff"/>
+
+    <!-- top terminal bar -->
+    <rect x="38" y="35" width="24" height="4" rx="1" fill="#00d4ff"/>
+
+    <!-- bottom terminal bar -->
+    <rect x="38" y="76" width="24" height="4" rx="1" fill="#00d4ff"/>
+</svg>

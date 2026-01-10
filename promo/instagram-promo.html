@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iNTERCEPT Promo</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cyan: #00d4ff;
+            --green: #00ff88;
+            --red: #ff3366;
+            --purple: #a855f7;
+            --orange: #ff9500;
+            --bg: #0a0a0f;
+            --bg-secondary: #12121a;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Container maintains 9:16 aspect ratio and scales to fit */
+        .video-frame {
+            position: relative;
+            width: min(100vw, calc(100vh * 9 / 16));
+            height: min(100vh, calc(100vw * 16 / 9));
+            max-width: 1080px;
+            max-height: 1920px;
+            background: var(--bg);
+            color: #fff;
+            overflow: hidden;
+            /* Scale font size based on container width */
+            font-size: min(16px, calc(100vw * 16 / 1080));
+        }
+
+        /* Animated background grid */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, 30px); }
+        }
+
+        /* Scanning line effect */
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            animation: scan 3s linear infinite;
+            opacity: 0.7;
+            z-index: 100;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* Glowing orbs background */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(50px);
+            opacity: 0.25;
+            animation: orbFloat 8s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 200px;
+            height: 200px;
+            background: var(--cyan);
+            top: 10%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 150px;
+            height: 150px;
+            background: var(--purple);
+            bottom: 20%;
+            right: -5%;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 120px;
+            height: 120px;
+            background: var(--green);
+            bottom: 40%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
+        }
+
+        /* Main content container */
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Scene management */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Scene 1: Logo reveal */
+        .logo-container {
+            text-align: center;
+        }
+
+        .logo-svg {
+            width: 140px;
+            height: 140px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.5));
+        }
+
+        .logo-svg .signal-wave {
+            opacity: 0;
+            animation: signalReveal 0.5s ease forwards;
+        }
+
+        .logo-svg .signal-wave-1 { animation-delay: 0.5s; }
+        .logo-svg .signal-wave-2 { animation-delay: 0.7s; }
+        .logo-svg .signal-wave-3 { animation-delay: 0.9s; }
+        .logo-svg .signal-wave-4 { animation-delay: 0.5s; }
+        .logo-svg .signal-wave-5 { animation-delay: 0.7s; }
+        .logo-svg .signal-wave-6 { animation-delay: 0.9s; }
+
+        @keyframes signalReveal {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .logo-svg .logo-i {
+            opacity: 0;
+            animation: logoReveal 0.8s ease forwards 0.2s;
+        }
+
+        @keyframes logoReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-svg .logo-dot {
+            animation: dotPulse 1.5s ease-in-out infinite 1s;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.5)); }
+            50% { filter: drop-shadow(0 0 25px rgba(0, 255, 136, 1)); }
+        }
+
+        .title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            margin-bottom: 10px;
+            opacity: 0;
+            animation: titleReveal 1s ease forwards 1.2s;
+        }
+
+        @keyframes titleReveal {
+            0% { opacity: 0; transform: translateY(20px); letter-spacing: 0.3em; }
+            100% { opacity: 1; transform: translateY(0); letter-spacing: 0.15em; }
+        }
+
+        .tagline {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            color: var(--cyan);
+            letter-spacing: 0.1em;
+            opacity: 0;
+            animation: taglineReveal 0.8s ease forwards 1.8s;
+        }
+
+        @keyframes taglineReveal {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #888;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            animation: subtitleReveal 0.8s ease forwards 2.2s;
+        }
+
+        @keyframes subtitleReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scene 2: Features */
+        .features-scene {
+            text-align: center;
+        }
+
+        .feature-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            color: var(--cyan);
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: featureReveal 0.6s ease forwards;
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.2s; }
+        .feature-card:nth-child(2) { animation-delay: 0.4s; }
+        .feature-card:nth-child(3) { animation-delay: 0.6s; }
+        .feature-card:nth-child(4) { animation-delay: 0.8s; }
+
+        @keyframes featureReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .feature-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* Scene 3: Modes showcase */
+        .modes-scene {
+            text-align: center;
+        }
+
+        .mode-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .mode-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--cyan);
+            padding: 10px 15px;
+            border-radius: 0 8px 8px 0;
+            opacity: 0;
+            transform: translateX(-30px);
+            animation: modeSlide 0.5s ease forwards;
+        }
+
+        .mode-item:nth-child(1) { animation-delay: 0.1s; border-color: var(--cyan); }
+        .mode-item:nth-child(2) { animation-delay: 0.2s; border-color: var(--green); }
+        .mode-item:nth-child(3) { animation-delay: 0.3s; border-color: var(--purple); }
+        .mode-item:nth-child(4) { animation-delay: 0.4s; border-color: var(--orange); }
+        .mode-item:nth-child(5) { animation-delay: 0.5s; border-color: var(--red); }
+        .mode-item:nth-child(6) { animation-delay: 0.6s; border-color: #00ffcc; }
+        .mode-item:nth-child(7) { animation-delay: 0.7s; border-color: #ff66cc; }
+
+        @keyframes modeSlide {
+            0% { opacity: 0; transform: translateX(-30px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        .mode-icon {
+            font-size: 22px;
+            width: 35px;
+            flex-shrink: 0;
+        }
+
+        .mode-info {
+            text-align: left;
+        }
+
+        .mode-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .mode-desc {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Scene 4: UI Preview */
+        .ui-scene {
+            text-align: center;
+        }
+
+        .ui-preview {
+            width: 100%;
+            max-width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.2);
+        }
+
+        .ui-header {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .ui-logo-small {
+            width: 24px;
+            height: 24px;
+        }
+
+        .ui-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .ui-body {
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .ui-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ui-card-header {
+            font-size: 8px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+
+        .ui-stat {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .ui-stat.cyan { color: var(--cyan); }
+        .ui-stat.orange { color: var(--orange); }
+
+        .ui-console {
+            grid-column: span 3;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            text-align: left;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .console-line {
+            margin-bottom: 4px;
+            opacity: 0;
+            animation: consoleLine 0.3s ease forwards;
+        }
+
+        .console-line:nth-child(1) { animation-delay: 0.5s; }
+        .console-line:nth-child(2) { animation-delay: 0.8s; }
+        .console-line:nth-child(3) { animation-delay: 1.1s; }
+        .console-line:nth-child(4) { animation-delay: 1.4s; }
+        .console-line:nth-child(5) { animation-delay: 1.7s; }
+
+        @keyframes consoleLine {
+            0% { opacity: 0; transform: translateX(-10px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        .console-time { color: #666; }
+        .console-type { color: var(--cyan); }
+        .console-msg { color: var(--green); }
+        .console-freq { color: var(--orange); }
+
+        /* Scene 5: CTA */
+        .cta-scene {
+            text-align: center;
+        }
+
+        .cta-logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            animation: ctaLogoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes ctaLogoPulse {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.8)); transform: scale(1.05); }
+        }
+
+        .cta-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .cta-tagline {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 30px;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            background: var(--cyan);
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            animation: ctaBtnPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes ctaBtnPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.8); }
+        }
+
+        .cta-url {
+            margin-top: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Typing cursor effect */
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1em;
+            background: var(--cyan);
+            margin-left: 5px;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        /* Decorative elements */
+        .corner-decoration {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .corner-tl {
+            top: 15px;
+            left: 15px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: 15px;
+            right: 15px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: 50px;
+            left: 15px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: 50px;
+            right: 15px;
+            border-left: none;
+            border-top: none;
+        }
+    </style>
+</head>
+<body>
+<div class="video-frame">
+    <!-- Background elements -->
+    <div class="grid-bg"></div>
+    <div class="scanline"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Corner decorations -->
+    <div class="corner-decoration corner-tl"></div>
+    <div class="corner-decoration corner-tr"></div>
+    <div class="corner-decoration corner-bl"></div>
+    <div class="corner-decoration corner-br"></div>
+
+    <!-- Scene 1: Logo Reveal -->
+    <div class="scene active" id="scene1">
+        <div class="logo-container">
+            <svg class="logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Signal brackets - left side -->
+                <path class="signal-wave signal-wave-1" d="M15 30 Q5 50, 15 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <path class="signal-wave signal-wave-2" d="M22 35 Q14 50, 22 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                <path class="signal-wave signal-wave-3" d="M29 40 Q23 50, 29 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- Signal brackets - right side -->
+                <path class="signal-wave signal-wave-4" d="M85 30 Q95 50, 85 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <path class="signal-wave signal-wave-5" d="M78 35 Q86 50, 78 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                <path class="signal-wave signal-wave-6" d="M71 40 Q77 50, 71 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- The 'i' letter -->
+                <g class="logo-i">
+                    <circle class="logo-dot" cx="50" cy="22" r="6" fill="#00ff88"/>
+                    <rect x="44" y="35" width="12" height="45" rx="2" fill="#00d4ff"/>
+                    <rect x="38" y="35" width="24" height="4" rx="1" fill="#00d4ff"/>
+                    <rect x="38" y="76" width="24" height="4" rx="1" fill="#00d4ff"/>
+                </g>
+            </svg>
+            <h1 class="title">iNTERCEPT</h1>
+            <p class="tagline">// See the Invisible</p>
+            <p class="subtitle">Signal Intelligence & Counter Surveillance</p>
+        </div>
+    </div>
+
+    <!-- Scene 2: Features Grid -->
+    <div class="scene" id="scene2">
+        <div class="features-scene">
+            <h2 class="feature-title">Capabilities</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📡</div>
+                    <div class="feature-name">SDR Scanning</div>
+                    <div class="feature-desc">Multi-band reception</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <div class="feature-name">Decryption</div>
+                    <div class="feature-desc">Signal analysis</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛰️</div>
+                    <div class="feature-name">Tracking</div>
+                    <div class="feature-desc">Real-time monitoring</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-name">Detection</div>
+                    <div class="feature-desc">Counter surveillance</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 3: Modes List -->
+    <div class="scene" id="scene3">
+        <div class="modes-scene">
+            <div class="mode-showcase">
+                <div class="mode-item">
+                    <div class="mode-icon">📟</div>
+                    <div class="mode-info">
+                        <div class="mode-name">PAGER</div>
+                        <div class="mode-desc">POCSAG & FLEX decoding</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">✈️</div>
+                    <div class="mode-info">
+                        <div class="mode-name">ADS-B</div>
+                        <div class="mode-desc">Aircraft tracking</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">📻</div>
+                    <div class="mode-info">
+                        <div class="mode-name">LISTENING POST</div>
+                        <div class="mode-desc">RF monitoring & scanning</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">📶</div>
+                    <div class="mode-info">
+                        <div class="mode-name">WiFi</div>
+                        <div class="mode-desc">Network reconnaissance</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">🔵</div>
+                    <div class="mode-info">
+                        <div class="mode-name">BLUETOOTH</div>
+                        <div class="mode-desc">Device & tracker detection</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">🌡️</div>
+                    <div class="mode-info">
+                        <div class="mode-name">SENSORS</div>
+                        <div class="mode-desc">433MHz IoT decoding</div>
+                    </div>
+                </div>
+                <div class="mode-item">
+                    <div class="mode-icon">🛰️</div>
+                    <div class="mode-info">
+                        <div class="mode-name">SATELLITE</div>
+                        <div class="mode-desc">Pass prediction & tracking</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 4: UI Preview -->
+    <div class="scene" id="scene4">
+        <div class="ui-scene">
+            <div class="ui-preview">
+                <div class="ui-header">
+                    <svg class="ui-logo-small" viewBox="0 0 100 100" fill="none">
+                        <path d="M15 30 Q5 50, 15 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                        <path d="M22 35 Q14 50, 22 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                        <path d="M29 40 Q23 50, 29 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        <path d="M85 30 Q95 50, 85 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                        <path d="M78 35 Q86 50, 78 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                        <path d="M71 40 Q77 50, 71 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        <circle cx="50" cy="22" r="6" fill="#00ff88"/>
+                        <rect x="44" y="35" width="12" height="45" rx="2" fill="#00d4ff"/>
+                        <rect x="38" y="35" width="24" height="4" rx="1" fill="#00d4ff"/>
+                        <rect x="38" y="76" width="24" height="4" rx="1" fill="#00d4ff"/>
+                    </svg>
+                    <span class="ui-title">iNTERCEPT</span>
+                </div>
+                <div class="ui-body">
+                    <div class="ui-card">
+                        <div class="ui-card-header">Messages</div>
+                        <div class="ui-stat">2,847</div>
+                    </div>
+                    <div class="ui-card">
+                        <div class="ui-card-header">Aircraft</div>
+                        <div class="ui-stat cyan">42</div>
+                    </div>
+                    <div class="ui-card">
+                        <div class="ui-card-header">Devices</div>
+                        <div class="ui-stat orange">156</div>
+                    </div>
+                    <div class="ui-console">
+                        <div class="console-line">
+                            <span class="console-time">[14:32:07]</span>
+                            <span class="console-type"> POCSAG </span>
+                            <span class="console-msg">Signal intercepted</span>
+                            <span class="console-freq"> 153.350 MHz</span>
+                        </div>
+                        <div class="console-line">
+                            <span class="console-time">[14:32:09]</span>
+                            <span class="console-type"> ADS-B </span>
+                            <span class="console-msg">Aircraft detected: BA284</span>
+                            <span class="console-freq"> FL350</span>
+                        </div>
+                        <div class="console-line">
+                            <span class="console-time">[14:32:11]</span>
+                            <span class="console-type"> BT </span>
+                            <span class="console-msg">AirTag detected nearby</span>
+                            <span class="console-freq"> -42 dBm</span>
+                        </div>
+                        <div class="console-line">
+                            <span class="console-time">[14:32:14]</span>
+                            <span class="console-type"> SENSOR </span>
+                            <span class="console-msg">Temperature: 22.4C</span>
+                            <span class="console-freq"> 433.92 MHz</span>
+                        </div>
+                        <div class="console-line">
+                            <span class="console-time">[14:32:16]</span>
+                            <span class="console-type"> SCAN </span>
+                            <span class="console-msg">Signal found</span>
+                            <span class="console-freq"> 145.500 MHz</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 5: CTA -->
+    <div class="scene" id="scene5">
+        <div class="cta-scene">
+            <svg class="cta-logo" viewBox="0 0 100 100" fill="none">
+                <path d="M15 30 Q5 50, 15 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <path d="M22 35 Q14 50, 22 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                <path d="M29 40 Q23 50, 29 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M85 30 Q95 50, 85 70" stroke="#00d4ff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <path d="M78 35 Q86 50, 78 65" stroke="#00d4ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                <path d="M71 40 Q77 50, 71 60" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <circle cx="50" cy="22" r="6" fill="#00ff88"/>
+                <rect x="44" y="35" width="12" height="45" rx="2" fill="#00d4ff"/>
+                <rect x="38" y="35" width="24" height="4" rx="1" fill="#00d4ff"/>
+                <rect x="38" y="76" width="24" height="4" rx="1" fill="#00d4ff"/>
+            </svg>
+            <h2 class="cta-title">iNTERCEPT</h2>
+            <p class="cta-tagline">See the Invisible</p>
+            <div class="cta-btn">Open Source</div>
+            <p class="cta-url">github.com/yourrepo/intercept</p>
+        </div>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="progress-bar">
+        <div class="progress-dot active" data-scene="1"></div>
+        <div class="progress-dot" data-scene="2"></div>
+        <div class="progress-dot" data-scene="3"></div>
+        <div class="progress-dot" data-scene="4"></div>
+        <div class="progress-dot" data-scene="5"></div>
+    </div>
+</div><!-- end video-frame -->
+
+    <script>
+        // Scene timing (in milliseconds)
+        const sceneTiming = [
+            { scene: 1, duration: 4000 },  // Logo reveal
+            { scene: 2, duration: 4000 },  // Features
+            { scene: 3, duration: 5000 },  // Modes
+            { scene: 4, duration: 5000 },  // UI Preview
+            { scene: 5, duration: 4000 },  // CTA
+        ];
+
+        let currentScene = 0;
+
+        function showScene(index) {
+            // Hide all scenes
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.progress-dot').forEach(d => d.classList.remove('active'));
+
+            // Show current scene
+            const scene = document.getElementById(`scene${index + 1}`);
+            if (scene) {
+                scene.classList.add('active');
+                document.querySelector(`.progress-dot[data-scene="${index + 1}"]`).classList.add('active');
+            }
+        }
+
+        function nextScene() {
+            currentScene++;
+            if (currentScene >= sceneTiming.length) {
+                currentScene = 0; // Loop back to start
+            }
+            showScene(currentScene);
+            setTimeout(nextScene, sceneTiming[currentScene].duration);
+        }
+
+        // Start the animation sequence
+        setTimeout(nextScene, sceneTiming[0].duration);
+
+        // Keyboard controls for manual navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                currentScene = (currentScene + 1) % sceneTiming.length;
+                showScene(currentScene);
+            } else if (e.key === 'ArrowLeft') {
+                currentScene = (currentScene - 1 + sceneTiming.length) % sceneTiming.length;
+                showScene(currentScene);
+            } else if (e.key === ' ') {
+                // Spacebar to pause/resume could be added here
+            }
+        });
+
+        // Click on progress dots to jump to scene
+        document.querySelectorAll('.progress-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                currentScene = parseInt(dot.dataset.scene) - 1;
+                showScene(currentScene);
+            });
+        });
+    </script>
+</body>
+</html>

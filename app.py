@@ -434,6 +434,14 @@ def main() -> None:
     from routes import register_blueprints
     register_blueprints(app)
 
+    # Initialize WebSocket for audio streaming
+    try:
+        from routes.audio_websocket import init_audio_websocket
+        init_audio_websocket(app)
+        print("WebSocket audio streaming enabled")
+    except ImportError as e:
+        print(f"WebSocket audio disabled (install flask-sock): {e}")
+
     print(f"Open http://localhost:{args.port} in your browser")
     print()
     print("Press Ctrl+C to stop")

@@ -82,6 +82,228 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+/* ============================================
+   LANDING PAGE / SPLASH SCREEN
+   ============================================ */
+
+.landing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.landing-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(74, 158, 255, 0.03) 0%, transparent 50%),
+        linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.02) 100%);
+    pointer-events: none;
+}
+
+.landing-content {
+    text-align: center;
+    z-index: 1;
+    animation: landingFadeIn 1s ease-out;
+}
+
+@keyframes landingFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.landing-logo {
+    margin-bottom: 30px;
+    animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.6));
+    }
+}
+
+.landing-logo .signal-wave {
+    animation: signalPulse 2s ease-in-out infinite;
+}
+
+.landing-logo .signal-wave-1 {
+    animation-delay: 0s;
+}
+
+.landing-logo .signal-wave-2 {
+    animation-delay: 0.2s;
+}
+
+.landing-logo .signal-wave-3 {
+    animation-delay: 0.4s;
+}
+
+@keyframes signalPulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.landing-logo .logo-dot {
+    animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        fill: #00ff88;
+        filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.5));
+    }
+    50% {
+        fill: #00ffaa;
+        filter: drop-shadow(0 0 15px rgba(0, 255, 136, 0.9));
+    }
+}
+
+.landing-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.3em;
+    margin: 0 0 10px 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+.landing-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem;
+    color: #00d4ff;
+    letter-spacing: 0.2em;
+    margin: 0 0 8px 0;
+    opacity: 0.9;
+}
+
+.landing-subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0 0 40px 0;
+}
+
+.landing-enter-btn {
+    background: transparent;
+    border: 2px solid #00d4ff;
+    color: #00d4ff;
+    padding: 15px 50px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-enter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.landing-enter-btn:hover::before {
+    left: 100%;
+}
+
+.landing-enter-btn:hover {
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.landing-enter-btn .btn-icon {
+    transition: transform 0.3s ease;
+}
+
+.landing-enter-btn:hover .btn-icon {
+    transform: translateX(5px);
+}
+
+.landing-version {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 30px;
+    letter-spacing: 0.1em;
+}
+
+.landing-scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+    animation: scanlineMove 4s linear infinite;
+    opacity: 0.5;
+}
+
+@keyframes scanlineMove {
+    0% {
+        top: 0;
+    }
+    100% {
+        top: 100%;
+    }
+}
+
+.landing-overlay.fade-out {
+    animation: landingFadeOut 0.5s ease-in forwards;
+}
+
+@keyframes landingFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* ============================================
+   END LANDING PAGE
+   ============================================ */
+
 .container {
     max-width: 100%;
     margin: 0;
@@ -117,7 +339,6 @@ header h1 {
     font-size: 1.1rem;
     font-weight: 600;
     letter-spacing: 0.15em;
-    text-transform: uppercase;
     margin: 0;
     display: inline;
     vertical-align: middle;
@@ -1003,12 +1224,13 @@ header h1 .tagline {
 
 .output-content {
     flex: 1;
-    padding: 12px;
+    padding: 10px;
     overflow-y: auto;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-size: 11px;
     background: var(--bg-primary);
-    min-height: 200px; /* Ensure minimum space for device cards */
+    min-height: 100px;
+    max-height: 250px;
 }
 
 .output-content::-webkit-scrollbar {
@@ -1775,6 +1997,25 @@ header h1 .tagline {
 
 .satellite-content.active {
     display: block;
+}
+
+/* Satellite Dashboard Embed */
+.satellite-dashboard-embed {
+    width: 100%;
+    height: calc(100vh - 200px);
+    min-height: 700px;
+    max-height: 900px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.satellite-dashboard-embed iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: var(--bg-primary);
 }
 
 /* Satellite Pass Predictor - Cool UI */
@@ -3557,4 +3798,923 @@ body::before {
 @keyframes gps-pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ============================================
+   RADIO CONTROL INTERFACE - Listening Post
+   Modern tactical radio-inspired UI
+   ============================================ */
+
+/* Radio Panel Container */
+.radio-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+/* Frequency Display Section */
+.radio-display-section {
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.freq-display {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 25px 40px;
+    text-align: center;
+    box-shadow:
+        inset 0 0 40px rgba(0, 0, 0, 0.6),
+        0 0 30px var(--accent-cyan-dim);
+    position: relative;
+    overflow: hidden;
+}
+
+.freq-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--accent-cyan) 50%,
+        transparent 100%
+    );
+    opacity: 0.5;
+}
+
+.freq-status {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+}
+
+.freq-status.active {
+    color: var(--accent-cyan);
+    animation: freq-status-pulse 1.5s ease-in-out infinite;
+}
+
+.freq-status.signal {
+    color: var(--accent-green);
+}
+
+@keyframes freq-status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.freq-digits {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow:
+        0 0 10px var(--accent-cyan),
+        0 0 25px var(--accent-cyan),
+        0 0 50px rgba(74, 158, 255, 0.4);
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.freq-digits.signal {
+    color: var(--accent-green);
+    text-shadow:
+        0 0 10px var(--accent-green),
+        0 0 25px var(--accent-green),
+        0 0 50px rgba(34, 197, 94, 0.4);
+}
+
+.freq-unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+    vertical-align: baseline;
+}
+
+.freq-mode-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--accent-cyan-dim);
+    border: 1px solid var(--accent-cyan);
+    border-radius: 4px;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    margin-top: 12px;
+    letter-spacing: 1px;
+}
+
+/* Radio Controls Section */
+.radio-controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 20px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.radio-control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.radio-control-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Rotary Knob */
+.radio-knob {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(145deg, var(--bg-elevated), var(--bg-primary));
+    border-radius: 50%;
+    border: 2px solid var(--border-light);
+    position: relative;
+    cursor: grab;
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 20px var(--accent-cyan-dim);
+    transition: box-shadow 0.2s ease;
+}
+
+.radio-knob:hover {
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 30px var(--accent-cyan-dim);
+}
+
+.radio-knob:active {
+    cursor: grabbing;
+}
+
+.radio-knob::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, var(--bg-tertiary) 0%, var(--bg-primary) 100%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid var(--border-color);
+}
+
+.radio-knob::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 22px;
+    background: var(--accent-cyan);
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.radio-knob.active::after {
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+}
+
+/* Knob tick marks ring */
+.knob-ticks {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.knob-tick {
+    position: absolute;
+    width: 2px;
+    height: 6px;
+    background: var(--border-light);
+    top: 0;
+    left: 50%;
+    transform-origin: center 45px;
+}
+
+.knob-tick.major {
+    height: 8px;
+    background: var(--text-muted);
+}
+
+.knob-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+.knob-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px var(--accent-cyan-dim);
+}
+
+/* Knobs Row Container */
+.knobs-row {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.knob-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Button Bank */
+.radio-button-bank {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-primary);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.radio-btn {
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 50px;
+    text-align: center;
+}
+
+.radio-btn:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.radio-btn:last-child {
+    border-radius: 0 4px 4px 0;
+}
+
+.radio-btn:only-child {
+    border-radius: 4px;
+}
+
+.radio-btn.active {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+    box-shadow: 0 0 15px var(--accent-cyan-dim);
+}
+
+.radio-btn:hover:not(.active) {
+    background: var(--bg-elevated);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* Tuning Dial */
+.tuning-dial {
+    width: 100px;
+    height: 100px;
+    background: conic-gradient(
+        from 0deg,
+        var(--bg-secondary) 0deg,
+        var(--bg-elevated) 45deg,
+        var(--bg-secondary) 90deg,
+        var(--bg-elevated) 135deg,
+        var(--bg-secondary) 180deg,
+        var(--bg-elevated) 225deg,
+        var(--bg-secondary) 270deg,
+        var(--bg-elevated) 315deg,
+        var(--bg-secondary) 360deg
+    );
+    border-radius: 50%;
+    border: 3px solid var(--border-light);
+    position: relative;
+    cursor: grab;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.4),
+        inset 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.tuning-dial:active {
+    cursor: grabbing;
+}
+
+.tuning-dial::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 4px;
+    height: 12px;
+    background: var(--accent-cyan);
+    transform: translateX(-50%);
+    border-radius: 2px;
+    box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+/* Fine Tune Buttons */
+.fine-tune-btns {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.tune-btn {
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tune-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.tune-btn:active {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+}
+
+/* Arc Signal Meter */
+.signal-arc-meter {
+    width: 180px;
+    height: 100px;
+    position: relative;
+}
+
+.signal-arc-meter svg {
+    width: 100%;
+    height: 100%;
+}
+
+.signal-arc-bg {
+    fill: none;
+    stroke: var(--bg-primary);
+    stroke-width: 12;
+    stroke-linecap: round;
+}
+
+.signal-arc-fill {
+    fill: none;
+    stroke: url(#signal-gradient);
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 188.5;
+    stroke-dashoffset: 188.5;
+    transition: stroke-dashoffset 0.1s ease-out;
+}
+
+.signal-arc-needle {
+    fill: var(--accent-cyan);
+    filter: drop-shadow(0 0 4px var(--accent-cyan));
+    transform-origin: 90px 90px;
+    transition: transform 0.1s ease-out;
+}
+
+.signal-arc-center {
+    fill: var(--bg-secondary);
+    stroke: var(--border-color);
+    stroke-width: 1;
+}
+
+.signal-arc-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    fill: var(--text-muted);
+}
+
+.signal-arc-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    fill: var(--accent-cyan);
+    text-anchor: middle;
+}
+
+/* Scanner Section */
+.radio-scanner-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.scanner-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.scanner-range input {
+    width: 100px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--accent-cyan);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.scanner-range input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 2px var(--accent-cyan-dim);
+}
+
+.scanner-range span {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.scanner-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.radio-action-btn {
+    padding: 12px 24px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.radio-action-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.radio-action-btn.scan {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: var(--bg-primary);
+}
+
+.radio-action-btn.scan:hover {
+    background: #5aa8ff;
+    box-shadow: 0 0 20px var(--accent-cyan-dim);
+}
+
+.radio-action-btn.scan.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+}
+
+.radio-action-btn.scan.active:hover {
+    box-shadow: 0 0 20px var(--accent-red-dim);
+}
+
+.radio-action-btn.pause {
+    background: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: #000;
+}
+
+.radio-action-btn.pause:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Scan Progress Bar */
+.scan-progress {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.scan-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+    border-radius: 3px;
+    transition: width 0.2s ease-out;
+    box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+/* Activity Log Section */
+.radio-log-section {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.log-header span {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.log-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.log-toggle:hover {
+    color: var(--accent-cyan);
+}
+
+.log-content {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px 15px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+
+/* Radio Meters Section */
+.radio-meters-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding: 15px;
+}
+
+.spectrum-display {
+    flex: 1;
+    max-width: 400px;
+}
+
+.spectrum-display canvas {
+    width: 100%;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+/* Responsive adjustments for radio panel */
+@media (max-width: 768px) {
+    .radio-controls-section {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .knobs-row {
+        flex-wrap: wrap;
+    }
+
+    .freq-digits {
+        font-size: 40px;
+    }
+
+    .radio-button-bank {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   RADIO MODULE BOX SYSTEM
+   Compact modular layout for Listening Post
+   ============================================ */
+
+.radio-module-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    position: relative;
+}
+
+.radio-module-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan-dim), transparent);
+}
+
+/* Main Scanner Module - Primary Feature */
+.radio-module-box.scanner-main {
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(0,20,30,0.95) 100%);
+    border: 1px solid var(--accent-cyan-dim);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1), inset 0 0 40px rgba(0, 0, 0, 0.3);
+}
+
+.radio-module-box.scanner-main::before {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.radio-module-box.scanner-main .module-header {
+    color: var(--accent-cyan);
+    font-size: 13px;
+    letter-spacing: 3px;
+}
+
+.module-header {
+    font-family: 'Orbitron', 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+/* Compact Radio Button Bank */
+.radio-button-bank.compact {
+    gap: 2px;
+}
+
+.radio-button-bank.compact .radio-btn {
+    padding: 5px 10px;
+    font-size: 10px;
+}
+
+/* Radio Input Fields */
+.radio-input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 8px;
+    text-align: center;
+}
+
+.radio-input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 5px var(--accent-cyan-dim);
+}
+
+/* Smaller Action Buttons for Compact Layout */
+.radio-action-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: var(--bg-elevated);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+}
+
+.radio-action-btn:hover:not(:disabled) {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--accent-cyan-dim);
+}
+
+.radio-action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.radio-action-btn.scan {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #000;
+}
+
+.radio-action-btn.scan:hover:not(:disabled) {
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+/* Statistics Box */
+.stat-box {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+}
+
+.stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+/* Smaller Knobs for Compact Layout */
+.radio-module-box .radio-knob {
+    width: 55px;
+    height: 55px;
+}
+
+.radio-module-box .knob-container {
+    text-align: center;
+}
+
+.radio-module-box .knob-label {
+    font-size: 9px;
+    margin-top: 5px;
+}
+
+.radio-module-box .knob-value {
+    font-size: 11px;
+}
+
+/* Smaller Tuning Dial for Compact Layout */
+.radio-module-box .tuning-dial {
+    width: 90px;
+    height: 90px;
+}
+
+/* Fine Tune Buttons - Compact */
+.fine-tune-btns {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.tune-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.tune-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* Signal Hits Table Compact */
+.radio-module-box table th,
+.radio-module-box table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.radio-module-box table tbody tr:hover {
+    background: rgba(0, 212, 255, 0.05);
+}
+
+/* Log Content Compact */
+.radio-module-box .log-content {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 8px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Listening Mode Selector Buttons */
+.radio-mode-btn {
+    padding: 12px 24px;
+    font-family: 'Orbitron', 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.radio-mode-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.radio-mode-btn.active {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 136, 0.1));
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2), inset 0 0 20px rgba(0, 212, 255, 0.05);
+}
+
+/* Listening Mode Panels */
+.listening-mode-panel {
+    display: contents;
+}
+
+.listening-mode-panel[style*="display: none"] {
+    display: none !important;
+}
+
+/* Frequency Preset Buttons */
+.preset-freq-btn {
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.preset-freq-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.preset-freq-btn:active {
+    transform: scale(0.98);
 }

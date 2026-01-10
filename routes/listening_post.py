@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import queue
+import select
+import signal
 import shutil
 import subprocess
 import threading
@@ -138,15 +140,19 @@ def scanner_loop():
     last_signal_time = 0
     signal_detected = False
 
-    # Convert step from kHz to MHz
-    step_mhz = scanner_config['step'] / 1000.0
-
     try:
         while scanner_running:
             # Check if paused
             if scanner_paused:
                 time.sleep(0.1)
                 continue
+
+            # Read config values on each iteration (allows live updates)
+            step_mhz = scanner_config['step'] / 1000.0
+            squelch = scanner_config['squelch']
+            mod = scanner_config['modulation']
+            gain = scanner_config['gain']
+            device = scanner_config['device']
 
             scanner_current_freq = current_freq
 
@@ -162,7 +168,6 @@ def scanner_loop():
 
             # Start rtl_fm at this frequency
             freq_hz = int(current_freq * 1e6)
-            mod = scanner_config['modulation']
 
             # Sample rates
             if mod == 'wfm':
@@ -182,8 +187,8 @@ def scanner_loop():
                 '-f', str(freq_hz),
                 '-s', str(sample_rate),
                 '-r', str(resample_rate),
-                '-g', str(scanner_config['gain']),
-                '-d', str(scanner_config['device']),
+                '-g', str(gain),
+                '-d', str(device),
             ]
             # Add bias-t flag if enabled (for external LNA power)
             if scanner_config.get('bias_t', False):
@@ -220,21 +225,22 @@ def scanner_loop():
                 # Analyze audio level
                 audio_detected = False
                 rms = 0
-                threshold = 3000
+                threshold = 500
                 if len(audio_data) > 100:
                     import struct
                     samples = struct.unpack(f'{len(audio_data)//2}h', audio_data)
                     # Calculate RMS level (root mean square)
                     rms = (sum(s*s for s in samples) / len(samples)) ** 0.5
 
-                    # WFM (broadcast FM) has much higher audio output - needs higher threshold
-                    # AM/NFM have lower output levels
+                    # Threshold based on squelch setting
+                    # Lower squelch = more sensitive (lower threshold)
+                    # squelch 0 = very sensitive, squelch 100 = only strong signals
                     if mod == 'wfm':
-                        # WFM: threshold 4000-12000 based on squelch
-                        threshold = 4000 + (scanner_config['squelch'] * 80)
+                        # WFM: threshold 500-10000 based on squelch
+                        threshold = 500 + (squelch * 95)
                     else:
-                        # AM/NFM: threshold 1500-8000 based on squelch
-                        threshold = 1500 + (scanner_config['squelch'] * 65)
+                        # AM/NFM: threshold 300-6500 based on squelch
+                        threshold = 300 + (squelch * 62)
 
                     audio_detected = rms > threshold
 
@@ -425,45 +431,33 @@ def _start_audio_stream(frequency: float, modulation: str):
             '-ac', '1',
             '-i', 'pipe:0',
             '-acodec', 'libmp3lame',
+            '-b:a', '128k',
+            '-ar', '44100',
             '-f', 'mp3',
-            '-b:a', '96k',
-            '-ar', '44100',  # Resample to standard rate for browser compatibility
-            '-flush_packets', '1',
-            '-fflags', '+nobuffer',
-            '-flags', '+low_delay',
             'pipe:1'
         ]
 
         try:
-            logger.info(f"Starting SDR ({sdr_type.value}): {' '.join(sdr_cmd)}")
-            audio_rtl_process = subprocess.Popen(
-                sdr_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+            # Use shell pipe for reliable streaming (Python subprocess piping can be unreliable)
+            shell_cmd = f"{' '.join(sdr_cmd)} 2>/dev/null | {' '.join(encoder_cmd)}"
+            logger.info(f"Starting audio pipeline: {shell_cmd}")
 
-            logger.info(f"Starting ffmpeg: {' '.join(encoder_cmd)}")
+            audio_rtl_process = None  # Not used in shell mode
             audio_process = subprocess.Popen(
-                encoder_cmd,
-                stdin=audio_rtl_process.stdout,
+                shell_cmd,
+                shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                bufsize=0
+                bufsize=0,
+                start_new_session=True  # Create new process group for clean shutdown
             )
 
-            audio_rtl_process.stdout.close()
-
-            # Brief delay to check if processes started successfully
-            time.sleep(0.2)
-
-            if audio_rtl_process.poll() is not None:
-                stderr = audio_rtl_process.stderr.read().decode() if audio_rtl_process.stderr else ''
-                logger.error(f"SDR process exited immediately: {stderr}")
-                return
+            # Brief delay to check if process started successfully
+            time.sleep(0.3)
 
             if audio_process.poll() is not None:
                 stderr = audio_process.stderr.read().decode() if audio_process.stderr else ''
-                logger.error(f"ffmpeg exited immediately: {stderr}")
+                logger.error(f"Audio pipeline exited immediately: {stderr}")
                 return
 
             audio_running = True
@@ -485,30 +479,37 @@ def _stop_audio_stream_internal():
     """Internal stop (must hold lock)."""
     global audio_process, audio_rtl_process, audio_running, audio_frequency
 
-    if audio_process:
-        try:
-            audio_process.terminate()
-            audio_process.wait(timeout=1)
-        except:
-            try:
-                audio_process.kill()
-            except:
-                pass
-        audio_process = None
-
-    if audio_rtl_process:
-        try:
-            audio_rtl_process.terminate()
-            audio_rtl_process.wait(timeout=1)
-        except:
-            try:
-                audio_rtl_process.kill()
-            except:
-                pass
-        audio_rtl_process = None
-
+    # Set flag first to stop any streaming
     audio_running = False
     audio_frequency = 0.0
+
+    # Kill the shell process and its children
+    if audio_process:
+        try:
+            # Kill entire process group (rtl_fm, ffmpeg, shell)
+            try:
+                os.killpg(os.getpgid(audio_process.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                audio_process.kill()
+            audio_process.wait(timeout=0.5)
+        except:
+            pass
+
+    audio_process = None
+    audio_rtl_process = None
+
+    # Kill any orphaned rtl_fm and ffmpeg processes
+    try:
+        subprocess.run(['pkill', '-9', 'rtl_fm'], capture_output=True, timeout=0.5)
+    except:
+        pass
+    try:
+        subprocess.run(['pkill', '-9', '-f', 'ffmpeg.*pipe:0'], capture_output=True, timeout=0.5)
+    except:
+        pass
+
+    # Pause for SDR device to be released (important for frequency/modulation changes)
+    time.sleep(0.7)
 
 
 # ============================================
@@ -658,6 +659,42 @@ def skip_signal() -> Response:
     })
 
 
+@listening_post_bp.route('/scanner/config', methods=['POST'])
+def update_scanner_config() -> Response:
+    """Update scanner config while running (step, squelch, gain, dwell)."""
+    data = request.json or {}
+
+    updated = []
+
+    if 'step' in data:
+        scanner_config['step'] = float(data['step'])
+        updated.append(f"step={data['step']}kHz")
+
+    if 'squelch' in data:
+        scanner_config['squelch'] = int(data['squelch'])
+        updated.append(f"squelch={data['squelch']}")
+
+    if 'gain' in data:
+        scanner_config['gain'] = int(data['gain'])
+        updated.append(f"gain={data['gain']}")
+
+    if 'dwell_time' in data:
+        scanner_config['dwell_time'] = int(data['dwell_time'])
+        updated.append(f"dwell={data['dwell_time']}s")
+
+    if 'modulation' in data:
+        scanner_config['modulation'] = str(data['modulation']).lower()
+        updated.append(f"mod={data['modulation']}")
+
+    if updated:
+        logger.info(f"Scanner config updated: {', '.join(updated)}")
+
+    return jsonify({
+        'status': 'updated',
+        'config': scanner_config
+    })
+
+
 @listening_post_bp.route('/scanner/status')
 def scanner_status() -> Response:
     """Get scanner status."""
@@ -738,6 +775,8 @@ def start_audio() -> Response:
     """Start audio at specific frequency (manual mode)."""
     global scanner_running
 
+    logger.info("Audio start request received")
+
     # Stop scanner if running
     if scanner_running:
         scanner_running = False
@@ -787,17 +826,15 @@ def start_audio() -> Response:
     _start_audio_stream(frequency, modulation)
 
     if audio_running:
-        add_activity_log('manual_tune', frequency, f'Manual tune to {frequency} MHz ({modulation.upper()})')
         return jsonify({
             'status': 'started',
             'frequency': frequency,
-            'modulation': modulation,
-            'stream_url': '/listening/audio/stream'
+            'modulation': modulation
         })
     else:
         return jsonify({
             'status': 'error',
-            'message': 'Failed to start audio. Check that rtl_fm and ffmpeg are installed, and that an SDR device is connected and not in use by another process.'
+            'message': 'Failed to start audio. Check SDR device.'
         }), 500
 
 
@@ -821,28 +858,30 @@ def audio_status() -> Response:
 @listening_post_bp.route('/audio/stream')
 def stream_audio() -> Response:
     """Stream MP3 audio."""
-    # Wait briefly for audio to start (handles race condition with /audio/start)
-    for _ in range(10):
+    # Wait for audio to be ready (up to 2 seconds for modulation/squelch changes)
+    for _ in range(40):
         if audio_running and audio_process:
             break
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     if not audio_running or not audio_process:
-        # Return empty audio response instead of JSON (browser audio element can't parse JSON)
         return Response(b'', mimetype='audio/mpeg', status=204)
 
     def generate():
-        chunk_size = 8192  # Larger chunks for smoother streaming
         try:
             while audio_running and audio_process and audio_process.poll() is None:
-                chunk = audio_process.stdout.read(chunk_size)
-                if not chunk:
-                    # Small wait before checking again to avoid busy loop
-                    time.sleep(0.01)
-                    continue
-                yield chunk
-        except Exception as e:
-            logger.error(f"Audio stream error: {e}")
+                # Use select to avoid blocking forever
+                ready, _, _ = select.select([audio_process.stdout], [], [], 2.0)
+                if ready:
+                    chunk = audio_process.stdout.read(4096)
+                    if chunk:
+                        yield chunk
+                    else:
+                        break
+        except GeneratorExit:
+            pass
+        except:
+            pass
 
     return Response(
         generate(),
