@@ -46,7 +46,7 @@ sudo python3 intercept.py
 ```bash
 git clone https://github.com/smittix/intercept.git
 cd intercept
-docker-compose up -d
+docker compose up -d
 ```
 
 > **Note:** Docker requires privileged mode for USB SDR access. See `docker-compose.yml` for configuration options.
@@ -124,6 +124,7 @@ Created by **smittix** - [GitHub](https://github.com/smittix)
 [aircrack-ng](https://www.aircrack-ng.org/) |
 [Leaflet.js](https://leafletjs.com/) |
 [Celestrak](https://celestrak.org/)
+
 
 
 
