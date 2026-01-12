@@ -265,8 +265,43 @@ brew_install() {
     return 0
   fi
   info "brew: installing ${pkg}..."
-  brew install "$pkg"
-  ok "brew: installed ${pkg}"
+  if brew install "$pkg" 2>&1; then
+    ok "brew: installed ${pkg}"
+    return 0
+  else
+    return 1
+  fi
+}
+
+install_multimon_ng_from_source_macos() {
+  info "multimon-ng not available via Homebrew. Building from source..."
+
+  # Ensure build dependencies are installed
+  brew_install cmake
+  brew_install libsndfile
+
+  (
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' EXIT
+
+    info "Cloning multimon-ng..."
+    git clone --depth 1 https://github.com/EliasOeworkem/multimon-ng.git "$tmp_dir/multimon-ng" >/dev/null 2>&1 \
+      || { fail "Failed to clone multimon-ng"; exit 1; }
+
+    cd "$tmp_dir/multimon-ng"
+    info "Compiling multimon-ng..."
+    mkdir -p build && cd build
+    cmake .. >/dev/null 2>&1 || { fail "cmake failed for multimon-ng"; exit 1; }
+    make >/dev/null 2>&1 || { fail "make failed for multimon-ng"; exit 1; }
+
+    # Install to /usr/local/bin (no sudo needed on Homebrew systems typically)
+    if [[ -w /usr/local/bin ]]; then
+      install -m 0755 multimon-ng /usr/local/bin/multimon-ng
+    else
+      sudo install -m 0755 multimon-ng /usr/local/bin/multimon-ng
+    fi
+    ok "multimon-ng installed successfully from source"
+  )
 }
 
 install_macos_packages() {
@@ -280,7 +315,12 @@ install_macos_packages() {
   brew_install librtlsdr
 
   progress "Installing multimon-ng"
-  brew_install multimon-ng
+  # multimon-ng is not in Homebrew core, so build from source
+  if ! cmd_exists multimon-ng; then
+    install_multimon_ng_from_source_macos
+  else
+    ok "multimon-ng already installed"
+  fi
 
   progress "Installing ffmpeg"
   brew_install ffmpeg
@@ -492,25 +532,28 @@ final_summary_and_hard_fail() {
   check_tools
 
   echo "============================================"
-  if [[ "${#missing_required[@]}" -eq 0 ]]; then
-    ok "All REQUIRED tools are installed."
-  else
-    fail "Missing REQUIRED tools:"
-    for t in "${missing_required[@]}"; do echo "  - $t"; done
-    echo
-    fail "Exiting because required tools are missing."
-    echo
-    warn "If you are on macOS: hcitool/hciconfig are Linux (BlueZ) tools and may not be installable."
-    warn "If you truly require them everywhere, you must restrict supported platforms or provide alternatives."
-    exit 1
-  fi
-
   echo
   echo "To start INTERCEPT:"
   echo "  sudo -E venv/bin/python intercept.py"
   echo
   echo "Then open http://localhost:5050 in your browser"
   echo
+  echo "============================================"
+
+  if [[ "${#missing_required[@]}" -eq 0 ]]; then
+    ok "All REQUIRED tools are installed."
+  else
+    fail "Missing REQUIRED tools:"
+    for t in "${missing_required[@]}"; do echo "  - $t"; done
+    echo
+    if [[ "$OS" == "macos" ]]; then
+      warn "macOS note: bluetoothctl/hcitool/hciconfig are Linux (BlueZ) tools and unavailable on macOS."
+      warn "Bluetooth functionality will be limited. Other features should work."
+    else
+      fail "Exiting because required tools are missing."
+      exit 1
+    fi
+  fi
 }
 
 # ----------------------------
