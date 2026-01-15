@@ -421,6 +421,7 @@ def start_aprs() -> Response:
     rtl_cmd = [
         rtl_fm_path,
         '-f', freq_hz,
+        '-M', 'fm',              # FM demodulation
         '-s', '22050',           # Sample rate for AFSK1200
         '-d', str(device),
     ]
@@ -430,9 +431,19 @@ def start_aprs() -> Response:
     if ppm and str(ppm) != '0':
         rtl_cmd.extend(['-p', str(ppm)])
 
+    # Explicitly output to stdout
+    rtl_cmd.append('-')
+
     # Build decoder command
     if direwolf_path:
-        decoder_cmd = [direwolf_path, '-r', '22050', '-D', '1', '-']
+        # direwolf flags for receiving AFSK1200 from stdin:
+        # -n 1 = mono audio channel
+        # -r 22050 = sample rate
+        # -b 16 = 16-bit samples
+        # -t 0 = disable PTT (receive only)
+        # -q d = quiet mode (less debug output)
+        # - = read from stdin
+        decoder_cmd = [direwolf_path, '-n', '1', '-r', '22050', '-b', '16', '-t', '0', '-q', 'd', '-']
         decoder_name = 'direwolf'
     else:
         decoder_cmd = [multimon_path, '-t', 'raw', '-a', 'AFSK1200', '-']
