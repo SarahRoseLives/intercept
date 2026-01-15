@@ -19,29 +19,72 @@
             AIRCRAFT RADAR
             <span>// INTERCEPT - See the Invisible</span>
         </div>
-        <div class="stats-badges">
-            <div class="stat-badge">
-                <span class="value" id="statTotal">0</span>
-                <span class="label">aircraft</span>
-            </div>
-            <div class="stat-badge">
-                <span class="value" id="statMaxRange">0</span>
-                <span class="label">nm max</span>
-            </div>
-            <div class="stat-badge">
-                <span class="value" id="statMsgRate">0</span>
-                <span class="label">msg/s</span>
-            </div>
-        </div>
         <div class="status-bar">
-            <div class="status-item">
-                <div class="status-dot inactive" id="trackingDot"></div>
-                <span id="trackingStatus">STANDBY</span>
-            </div>
-            <div class="datetime" id="utcTime">--:--:-- UTC</div>
             <a href="/?mode=aircraft" class="back-link">Main Dashboard</a>
         </div>
     </header>
+
+    <!-- Slim Statistics Bar -->
+    <div class="stats-strip">
+        <div class="stats-strip-inner">
+            <div class="strip-stat">
+                <span class="strip-value" id="stripAircraftNow">0</span>
+                <span class="strip-label">NOW</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripTotalSeen">0</span>
+                <span class="strip-label">SEEN</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripMaxRange">0</span>
+                <span class="strip-label">MAX NM</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripHighest">-</span>
+                <span class="strip-label">HIGH FL</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripFastest">-</span>
+                <span class="strip-label">FAST KT</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripClosest">-</span>
+                <span class="strip-label">NEAR NM</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripCountries">0</span>
+                <span class="strip-label">COUNTRIES</span>
+            </div>
+            <div class="strip-stat">
+                <span class="strip-value" id="stripAcars">0</span>
+                <span class="strip-label">ACARS</span>
+            </div>
+            <div class="strip-stat signal-stat" title="Signal quality (messages/errors)">
+                <span class="strip-value" id="stripSignal">--</span>
+                <span class="strip-label">SIGNAL</span>
+            </div>
+            <div class="strip-stat session-stat">
+                <span class="strip-value" id="stripSession">00:00:00</span>
+                <span class="strip-label">SESSION</span>
+            </div>
+            <div class="strip-divider"></div>
+            <button class="strip-btn" onclick="showSquawkReference()" title="Squawk Code Reference">
+                📟 Squawk
+            </button>
+            <button class="strip-btn" onclick="lookupSelectedFlight()" title="Lookup selected aircraft on FlightAware" id="flightLookupBtn" disabled>
+                🔗 Lookup
+            </button>
+            <button class="strip-btn primary" onclick="generateReport()" title="Generate Session Report">
+                📊 Report
+            </button>
+            <div class="strip-divider"></div>
+            <div class="strip-status">
+                <div class="status-dot inactive" id="trackingDot"></div>
+                <span id="trackingStatus">STANDBY</span>
+            </div>
+            <div class="strip-time" id="utcTime">--:--:-- UTC</div>
+        </div>
+    </div>
 
     <main class="dashboard">
         <!-- ACARS Panel (left of map) - Collapsible -->
@@ -137,77 +180,97 @@
             </div>
         </div>
 
-        <!-- Controls Bar -->
+        <!-- Controls Bar - Reorganized -->
         <div class="controls-bar">
-            <label title="Show aircraft trails"><input type="checkbox" id="showTrails" onchange="toggleTrails()"> Trails</label>
-            <label title="Show range rings"><input type="checkbox" id="showRangeRings" checked onchange="drawRangeRings()"> Rings</label>
-            <label title="Audio alerts"><input type="checkbox" id="alertToggle" checked onchange="toggleAlerts()"> Alerts</label>
-            <select id="aircraftFilter" onchange="applyFilter()" title="Filter aircraft">
-                <option value="all">All</option>
-                <option value="military">Military</option>
-                <option value="civil">Civil</option>
-                <option value="emergency">Emergency</option>
-                <option value="watchlist">Watchlist</option>
-            </select>
-            <button class="watchlist-btn" onclick="showWatchlistModal()" title="Manage Watchlist">★</button>
-            <select id="rangeSelect" onchange="updateRange()" title="Range rings distance">
-                <option value="50">50nm</option>
-                <option value="100">100nm</option>
-                <option value="200" selected>200nm</option>
-                <option value="300">300nm</option>
-            </select>
-            <input type="text" id="obsLat" value="51.5074" onchange="updateObserverLoc()" style="width: 65px;" title="Latitude">
-            <input type="text" id="obsLon" value="-0.1278" onchange="updateObserverLoc()" style="width: 65px;" title="Longitude">
-            <span id="gpsIndicator" class="gps-indicator" style="display: none;" title="GPS connected via gpsd"><span class="gps-dot"></span> GPS</span>
-            <label title="Use remote dump1090"><input type="checkbox" id="useRemoteDump1090" onchange="toggleRemoteDump1090()"> Remote</label>
-            <span class="remote-dump1090-controls" style="display: none;">
-                <input type="text" id="remoteSbsHost" placeholder="Host" style="width: 70px;">
-                <input type="number" id="remoteSbsPort" value="30003" style="width: 50px;">
-            </span>
-            <span class="sdr-group" title="SDR device for ADS-B tracking (1090 MHz)">
-                <span class="sdr-label">ADS-B:</span>
-                <select id="adsbDeviceSelect" style="width: 80px;">
-                    <option value="0">Loading...</option>
-                </select>
-            </span>
-            <button class="start-btn" id="startBtn" onclick="toggleTracking()">START</button>
-            <div class="airband-divider"></div>
-            <span class="sdr-group" title="SDR device for airband listening (VHF)">
-                <span class="sdr-label">Listen:</span>
-            </span>
-            <select id="airbandFreqSelect" onchange="updateAirbandFreq()" class="airband-controls" title="Airband frequency">
-                <option value="121.5">121.5 Guard</option>
-                <option value="118.0">118.0</option>
-                <option value="119.1">119.1</option>
-                <option value="120.5">120.5</option>
-                <option value="123.45">123.45 Air</option>
-                <option value="127.85">127.85</option>
-                <option value="128.825">128.825</option>
-                <option value="132.0">132.0</option>
-                <option value="134.725">134.725</option>
-                <option value="custom">Custom</option>
-            </select>
-            <input type="number" id="airbandCustomFreq" step="0.005" placeholder="MHz" class="airband-controls" style="width: 60px; display: none;">
-            <select id="airbandDeviceSelect" class="airband-controls" style="width: 90px;" title="SDR for airband (use different device than tracking)">
-                <option value="0">Loading...</option>
-            </select>
-            <input type="range" id="airbandSquelch" min="0" max="100" value="20" class="airband-controls" style="width: 50px;" title="Squelch">
-            <span class="airband-controls" style="display: flex; align-items: center; gap: 3px;" title="Volume">
-                <span style="font-size: 9px; color: var(--text-muted);">🔊</span>
-                <input type="range" id="airbandVolume" min="0" max="100" value="80" style="width: 50px;" oninput="updateAirbandVolume()">
-            </span>
-            <button class="airband-btn" id="airbandBtn" onclick="toggleAirband()">▶ LISTEN</button>
-            <span id="airbandStatus" class="airband-controls" style="color: var(--text-muted); font-size: 9px;">OFF</span>
-            <audio id="airbandPlayer" style="display: none;" crossorigin="anonymous"></audio>
-            <div class="airband-visualizer" id="airbandVisualizerContainer" style="display: none;">
-                <div class="signal-meter">
-                    <div class="meter-bar">
-                        <div class="meter-fill" id="airbandSignalMeter"></div>
-                        <div class="meter-peak" id="airbandSignalPeak"></div>
+            <!-- Display Options Group -->
+            <div class="control-group">
+                <span class="control-group-label">DISPLAY</span>
+                <div class="control-group-items">
+                    <label title="Show aircraft trails"><input type="checkbox" id="showTrails" onchange="toggleTrails()"> Trails</label>
+                    <label title="Show range rings"><input type="checkbox" id="showRangeRings" checked onchange="drawRangeRings()"> Rings</label>
+                    <label title="Audio alerts"><input type="checkbox" id="alertToggle" checked onchange="toggleAlerts()"> Alerts</label>
+                    <select id="aircraftFilter" onchange="applyFilter()" title="Filter aircraft">
+                        <option value="all">All Aircraft</option>
+                        <option value="military">Military</option>
+                        <option value="civil">Civil</option>
+                        <option value="emergency">Emergency</option>
+                        <option value="watchlist">Watchlist</option>
+                    </select>
+                    <button class="watchlist-btn" onclick="showWatchlistModal()" title="Manage Watchlist">★</button>
+                    <select id="rangeSelect" onchange="updateRange()" title="Range rings distance">
+                        <option value="50">50nm</option>
+                        <option value="100">100nm</option>
+                        <option value="200" selected>200nm</option>
+                        <option value="300">300nm</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Location Group -->
+            <div class="control-group">
+                <span class="control-group-label">LOCATION</span>
+                <div class="control-group-items">
+                    <input type="text" id="obsLat" value="51.5074" onchange="updateObserverLoc()" style="width: 70px;" title="Latitude" placeholder="Lat">
+                    <input type="text" id="obsLon" value="-0.1278" onchange="updateObserverLoc()" style="width: 70px;" title="Longitude" placeholder="Lon">
+                    <span id="gpsIndicator" class="gps-indicator" style="display: none;" title="GPS connected via gpsd"><span class="gps-dot"></span> GPS</span>
+                </div>
+            </div>
+
+            <!-- ADS-B Tracking Group -->
+            <div class="control-group tracking-group">
+                <span class="control-group-label">ADS-B TRACKING</span>
+                <div class="control-group-items">
+                    <label title="Use remote dump1090"><input type="checkbox" id="useRemoteDump1090" onchange="toggleRemoteDump1090()"> Remote</label>
+                    <span class="remote-dump1090-controls" style="display: none;">
+                        <input type="text" id="remoteSbsHost" placeholder="Host" style="width: 70px;">
+                        <input type="number" id="remoteSbsPort" value="30003" style="width: 55px;">
+                    </span>
+                    <select id="adsbDeviceSelect" title="SDR device for ADS-B (1090 MHz)">
+                        <option value="0">SDR 0</option>
+                    </select>
+                    <button class="start-btn" id="startBtn" onclick="toggleTracking()">START</button>
+                </div>
+            </div>
+
+            <!-- Airband Listening Group -->
+            <div class="control-group airband-group">
+                <span class="control-group-label">AIRBAND</span>
+                <div class="control-group-items">
+                    <select id="airbandFreqSelect" onchange="updateAirbandFreq()" class="airband-controls" title="Airband frequency">
+                        <option value="121.5">121.5 Guard</option>
+                        <option value="118.0">118.0</option>
+                        <option value="119.1">119.1</option>
+                        <option value="120.5">120.5</option>
+                        <option value="123.45">123.45 Air-Air</option>
+                        <option value="127.85">127.85</option>
+                        <option value="128.825">128.825</option>
+                        <option value="132.0">132.0</option>
+                        <option value="134.725">134.725</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="number" id="airbandCustomFreq" step="0.005" placeholder="MHz" class="airband-controls" style="width: 65px; display: none;">
+                    <select id="airbandDeviceSelect" class="airband-controls" title="SDR for airband">
+                        <option value="0">SDR 0</option>
+                    </select>
+                    <div class="airband-sliders">
+                        <span title="Squelch">SQ</span>
+                        <input type="range" id="airbandSquelch" min="0" max="100" value="20" class="airband-controls" title="Squelch">
+                        <span title="Volume">VOL</span>
+                        <input type="range" id="airbandVolume" min="0" max="100" value="80" class="airband-controls" oninput="updateAirbandVolume()" title="Volume">
+                    </div>
+                    <button class="airband-btn" id="airbandBtn" onclick="toggleAirband()">▶ LISTEN</button>
+                    <div class="airband-visualizer" id="airbandVisualizerContainer" style="display: none;">
+                        <div class="signal-meter">
+                            <div class="meter-bar">
+                                <div class="meter-fill" id="airbandSignalMeter"></div>
+                                <div class="meter-peak" id="airbandSignalPeak"></div>
+                            </div>
+                        </div>
+                        <canvas id="airbandSpectrumCanvas" width="80" height="20"></canvas>
                     </div>
                 </div>
-                <canvas id="airbandSpectrumCanvas" width="100" height="25"></canvas>
             </div>
+            <audio id="airbandPlayer" style="display: none;" crossorigin="anonymous"></audio>
         </div>
     </main>
 
@@ -245,8 +308,162 @@
             totalAircraftSeen: new Set(),
             maxRange: 0,
             messagesPerSecond: 0,
-            messageTimestamps: []
+            messageTimestamps: [],
+            countriesSeen: new Set(),
+            highestAltitude: 0,
+            fastestSpeed: 0,
+            closestDistance: Infinity,
+            sessionStart: null,
+            acarsMessages: 0
         };
+
+        // Session log for report generation
+        let sessionLog = {
+            startTime: null,
+            endTime: null,
+            aircraftLog: [],      // Array of all aircraft seen with details
+            highlights: [],       // Notable events (military, emergency, etc)
+            maxConcurrent: 0,
+            peakMsgRate: 0
+        };
+
+        // ICAO Country Allocations (first hex digit ranges)
+        const ICAO_COUNTRY_RANGES = [
+            { start: 0x000000, end: 0x003FFF, country: 'Zimbabwe' },
+            { start: 0x004000, end: 0x0043FF, country: 'Mozambique' },
+            { start: 0x006000, end: 0x006FFF, country: 'South Africa' },
+            { start: 0x008000, end: 0x00FFFF, country: 'South Africa' },
+            { start: 0x010000, end: 0x017FFF, country: 'Egypt' },
+            { start: 0x018000, end: 0x01FFFF, country: 'Libya' },
+            { start: 0x020000, end: 0x027FFF, country: 'Morocco' },
+            { start: 0x028000, end: 0x02FFFF, country: 'Tunisia' },
+            { start: 0x030000, end: 0x0303FF, country: 'Botswana' },
+            { start: 0x032000, end: 0x032FFF, country: 'Burundi' },
+            { start: 0x034000, end: 0x034FFF, country: 'Cameroon' },
+            { start: 0x038000, end: 0x038FFF, country: 'Congo' },
+            { start: 0x03E000, end: 0x03EFFF, country: 'Gabon' },
+            { start: 0x040000, end: 0x040FFF, country: 'Ethiopia' },
+            { start: 0x042000, end: 0x042FFF, country: 'Equatorial Guinea' },
+            { start: 0x044000, end: 0x044FFF, country: 'Ghana' },
+            { start: 0x048000, end: 0x0483FF, country: 'Tanzania' },
+            { start: 0x050000, end: 0x050FFF, country: 'Kenya' },
+            { start: 0x054000, end: 0x054FFF, country: 'Zambia' },
+            { start: 0x058000, end: 0x058FFF, country: 'Seychelles' },
+            { start: 0x060000, end: 0x061FFF, country: 'Algeria' },
+            { start: 0x068000, end: 0x068FFF, country: 'Angola' },
+            { start: 0x070000, end: 0x070FFF, country: 'Ivory Coast' },
+            { start: 0x078000, end: 0x078FFF, country: 'Mauritius' },
+            { start: 0x080000, end: 0x080FFF, country: 'Nigeria' },
+            { start: 0x088000, end: 0x088FFF, country: 'Uganda' },
+            { start: 0x090000, end: 0x090FFF, country: 'Qatar' },
+            { start: 0x0A0000, end: 0x0A7FFF, country: 'India' },
+            { start: 0x0C0000, end: 0x0C4FFF, country: 'Australia' },
+            { start: 0x100000, end: 0x1FFFFF, country: 'Russia' },
+            { start: 0x200000, end: 0x27FFFF, country: 'USA' },
+            { start: 0x280000, end: 0x28FFFF, country: 'USA' },
+            { start: 0x300000, end: 0x33FFFF, country: 'Italy' },
+            { start: 0x340000, end: 0x37FFFF, country: 'Spain' },
+            { start: 0x380000, end: 0x3BFFFF, country: 'France' },
+            { start: 0x3C0000, end: 0x3FFFFF, country: 'Germany' },
+            { start: 0x400000, end: 0x43FFFF, country: 'UK' },
+            { start: 0x440000, end: 0x447FFF, country: 'Austria' },
+            { start: 0x448000, end: 0x44FFFF, country: 'Belgium' },
+            { start: 0x450000, end: 0x457FFF, country: 'Bulgaria' },
+            { start: 0x458000, end: 0x45FFFF, country: 'Denmark' },
+            { start: 0x460000, end: 0x467FFF, country: 'Finland' },
+            { start: 0x468000, end: 0x46FFFF, country: 'Greece' },
+            { start: 0x470000, end: 0x477FFF, country: 'Hungary' },
+            { start: 0x478000, end: 0x47FFFF, country: 'Norway' },
+            { start: 0x480000, end: 0x487FFF, country: 'Netherlands' },
+            { start: 0x488000, end: 0x48FFFF, country: 'Poland' },
+            { start: 0x490000, end: 0x497FFF, country: 'Portugal' },
+            { start: 0x498000, end: 0x49FFFF, country: 'Czech Republic' },
+            { start: 0x4A0000, end: 0x4A7FFF, country: 'Romania' },
+            { start: 0x4A8000, end: 0x4AFFFF, country: 'Sweden' },
+            { start: 0x4B0000, end: 0x4B7FFF, country: 'Switzerland' },
+            { start: 0x4B8000, end: 0x4BFFFF, country: 'Turkey' },
+            { start: 0x4C0000, end: 0x4C7FFF, country: 'Serbia' },
+            { start: 0x4CA000, end: 0x4CAFFF, country: 'Ireland' },
+            { start: 0x4D0000, end: 0x4D03FF, country: 'Iceland' },
+            { start: 0x500000, end: 0x5003FF, country: 'Luxembourg' },
+            { start: 0x501000, end: 0x5013FF, country: 'Monaco' },
+            { start: 0x502000, end: 0x502FFF, country: 'Malta' },
+            { start: 0x503000, end: 0x5033FF, country: 'San Marino' },
+            { start: 0x505000, end: 0x5057FF, country: 'Latvia' },
+            { start: 0x506000, end: 0x5067FF, country: 'Lithuania' },
+            { start: 0x507000, end: 0x5077FF, country: 'Moldova' },
+            { start: 0x508000, end: 0x50FFFF, country: 'Slovakia' },
+            { start: 0x510000, end: 0x5107FF, country: 'Slovenia' },
+            { start: 0x511000, end: 0x5117FF, country: 'Uzbekistan' },
+            { start: 0x512000, end: 0x5127FF, country: 'Ukraine' },
+            { start: 0x513000, end: 0x5137FF, country: 'Belarus' },
+            { start: 0x514000, end: 0x5147FF, country: 'Estonia' },
+            { start: 0x515000, end: 0x5157FF, country: 'Macedonia' },
+            { start: 0x516000, end: 0x5167FF, country: 'Bosnia' },
+            { start: 0x517000, end: 0x5177FF, country: 'Georgia' },
+            { start: 0x518000, end: 0x5187FF, country: 'Tajikistan' },
+            { start: 0x600000, end: 0x6003FF, country: 'Armenia' },
+            { start: 0x680000, end: 0x6803FF, country: 'Kyrgyzstan' },
+            { start: 0x681000, end: 0x6813FF, country: 'Turkmenistan' },
+            { start: 0x682000, end: 0x6823FF, country: 'Azerbaijan' },
+            { start: 0x683000, end: 0x6833FF, country: 'Kazakhstan' },
+            { start: 0x700000, end: 0x700FFF, country: 'Afghanistan' },
+            { start: 0x702000, end: 0x702FFF, country: 'Bangladesh' },
+            { start: 0x704000, end: 0x704FFF, country: 'Maldives' },
+            { start: 0x706000, end: 0x706FFF, country: 'Nepal' },
+            { start: 0x708000, end: 0x708FFF, country: 'Pakistan' },
+            { start: 0x70A000, end: 0x70AFFF, country: 'Sri Lanka' },
+            { start: 0x70C000, end: 0x70C3FF, country: 'Myanmar' },
+            { start: 0x710000, end: 0x717FFF, country: 'Japan' },
+            { start: 0x718000, end: 0x71FFFF, country: 'Japan' },
+            { start: 0x720000, end: 0x727FFF, country: 'Laos' },
+            { start: 0x728000, end: 0x72FFFF, country: 'Mongolia' },
+            { start: 0x730000, end: 0x737FFF, country: 'Nepal' },
+            { start: 0x738000, end: 0x73FFFF, country: 'South Korea' },
+            { start: 0x740000, end: 0x747FFF, country: 'Indonesia' },
+            { start: 0x748000, end: 0x74FFFF, country: 'Malaysia' },
+            { start: 0x750000, end: 0x757FFF, country: 'Philippines' },
+            { start: 0x758000, end: 0x75FFFF, country: 'Singapore' },
+            { start: 0x760000, end: 0x767FFF, country: 'Thailand' },
+            { start: 0x768000, end: 0x76FFFF, country: 'Vietnam' },
+            { start: 0x780000, end: 0x7BFFFF, country: 'China' },
+            { start: 0x7C0000, end: 0x7FFFFF, country: 'Australia' },
+            { start: 0x800000, end: 0x83FFFF, country: 'India' },
+            { start: 0x840000, end: 0x87FFFF, country: 'Japan' },
+            { start: 0x880000, end: 0x887FFF, country: 'Pakistan' },
+            { start: 0x890000, end: 0x890FFF, country: 'Hong Kong' },
+            { start: 0x894000, end: 0x894FFF, country: 'Taiwan' },
+            { start: 0x895000, end: 0x8953FF, country: 'North Korea' },
+            { start: 0x896000, end: 0x896FFF, country: 'Jordan' },
+            { start: 0x897000, end: 0x897FFF, country: 'Lebanon' },
+            { start: 0x898000, end: 0x898FFF, country: 'Kuwait' },
+            { start: 0x899000, end: 0x8993FF, country: 'Saudi Arabia' },
+            { start: 0x8A0000, end: 0x8A7FFF, country: 'Saudi Arabia' },
+            { start: 0x900000, end: 0x9003FF, country: 'Kuwait' },
+            { start: 0x901000, end: 0x9013FF, country: 'Bahrain' },
+            { start: 0x902000, end: 0x9023FF, country: 'Yemen' },
+            { start: 0x903000, end: 0x9033FF, country: 'Syria' },
+            { start: 0xA00000, end: 0xAFFFFF, country: 'USA' },
+            { start: 0xC00000, end: 0xC3FFFF, country: 'Canada' },
+            { start: 0xC80000, end: 0xC87FFF, country: 'New Zealand' },
+            { start: 0xE00000, end: 0xE3FFFF, country: 'Argentina' },
+            { start: 0xE40000, end: 0xE7FFFF, country: 'Brazil' },
+            { start: 0xE80000, end: 0xE80FFF, country: 'Chile' },
+            { start: 0xE84000, end: 0xE84FFF, country: 'Colombia' },
+            { start: 0xE88000, end: 0xE88FFF, country: 'Peru' },
+            { start: 0xE8C000, end: 0xE8CFFF, country: 'Venezuela' },
+            { start: 0xF00000, end: 0xF07FFF, country: 'ICAO (special)' }
+        ];
+
+        function getCountryFromIcao(icao) {
+            const icaoNum = parseInt(icao, 16);
+            for (const range of ICAO_COUNTRY_RANGES) {
+                if (icaoNum >= range.start && icaoNum <= range.end) {
+                    return range.country;
+                }
+            }
+            return 'Unknown';
+        }
 
         // Observer location and range rings (load from localStorage or default to London)
         let observerLocation = (function() {
@@ -568,30 +785,411 @@
         // STATISTICS
         // ============================================
         function updateStatistics(icao, ac) {
-            if (!ac.lat || !ac.lon) return;
+            const isNew = !stats.totalAircraftSeen.has(icao);
             stats.totalAircraftSeen.add(icao);
 
-            const distance = calculateDistanceNm(
-                observerLocation.lat, observerLocation.lon,
-                ac.lat, ac.lon
-            );
-
-            if (distance > stats.maxRange) {
-                stats.maxRange = distance;
+            // Track country
+            const country = getCountryFromIcao(icao);
+            if (country !== 'Unknown') {
+                stats.countriesSeen.add(country);
             }
 
+            // Log new aircraft
+            if (isNew) {
+                const militaryInfo = isMilitaryAircraft(icao, ac.callsign);
+                const squawkInfo = checkSquawkCode(ac);
+                sessionLog.aircraftLog.push({
+                    icao,
+                    callsign: ac.callsign || '',
+                    registration: ac.registration || '',
+                    country,
+                    military: militaryInfo.military,
+                    firstSeen: new Date().toISOString(),
+                    altitude: ac.altitude,
+                    speed: ac.speed
+                });
+
+                // Log highlights
+                if (militaryInfo.military) {
+                    sessionLog.highlights.push({
+                        time: new Date().toISOString(),
+                        type: 'military',
+                        icao,
+                        callsign: ac.callsign || icao,
+                        country: militaryInfo.country || country
+                    });
+                }
+                if (squawkInfo && squawkInfo.type === 'emergency') {
+                    sessionLog.highlights.push({
+                        time: new Date().toISOString(),
+                        type: 'emergency',
+                        icao,
+                        callsign: ac.callsign || icao,
+                        squawk: ac.squawk,
+                        name: squawkInfo.name
+                    });
+                }
+            }
+
+            // Distance calculation
+            if (ac.lat && ac.lon) {
+                const distance = calculateDistanceNm(
+                    observerLocation.lat, observerLocation.lon,
+                    ac.lat, ac.lon
+                );
+
+                if (distance > stats.maxRange) {
+                    stats.maxRange = distance;
+                }
+            }
+
+            // Message rate
             const now = Date.now();
             stats.messageTimestamps.push(now);
             stats.messageTimestamps = stats.messageTimestamps.filter(t => now - t < 5000);
             stats.messagesPerSecond = stats.messageTimestamps.length / 5;
 
+            // Track peak message rate
+            if (stats.messagesPerSecond > sessionLog.peakMsgRate) {
+                sessionLog.peakMsgRate = stats.messagesPerSecond;
+            }
+
             updateStatsDisplay();
         }
 
+        // Signal quality tracking
+        let signalStats = {
+            goodMessages: 0,
+            errorMessages: 0
+        };
+
         function updateStatsDisplay() {
-            document.getElementById('statMaxRange').textContent = stats.maxRange.toFixed(0);
-            document.getElementById('statMsgRate').textContent = stats.messagesPerSecond.toFixed(1);
-            document.getElementById('statTotal').textContent = Object.keys(aircraft).length;
+            const aircraftCount = Object.keys(aircraft).length;
+
+            // Track max concurrent
+            if (aircraftCount > sessionLog.maxConcurrent) {
+                sessionLog.maxConcurrent = aircraftCount;
+            }
+
+            // Calculate live stats from current aircraft
+            let highest = 0, fastest = 0, closest = Infinity;
+            let highestIcao = '', fastestIcao = '', closestIcao = '';
+
+            Object.entries(aircraft).forEach(([icao, ac]) => {
+                if (ac.altitude && ac.altitude > highest) {
+                    highest = ac.altitude;
+                    highestIcao = icao;
+                }
+                if (ac.speed && ac.speed > fastest) {
+                    fastest = ac.speed;
+                    fastestIcao = icao;
+                }
+                if (ac.lat && ac.lon) {
+                    const dist = calculateDistanceNm(
+                        observerLocation.lat, observerLocation.lon,
+                        ac.lat, ac.lon
+                    );
+                    if (dist < closest) {
+                        closest = dist;
+                        closestIcao = icao;
+                    }
+                }
+            });
+
+            // Update strip stats
+            document.getElementById('stripAircraftNow').textContent = aircraftCount;
+            document.getElementById('stripTotalSeen').textContent = stats.totalAircraftSeen.size;
+            document.getElementById('stripMaxRange').textContent = stats.maxRange.toFixed(0);
+            document.getElementById('stripHighest').textContent = highest > 0 ? Math.round(highest / 100) : '-';
+            document.getElementById('stripFastest').textContent = fastest > 0 ? Math.round(fastest) : '-';
+            document.getElementById('stripClosest').textContent = closest < Infinity ? closest.toFixed(1) : '-';
+            document.getElementById('stripCountries').textContent = stats.countriesSeen.size;
+            document.getElementById('stripAcars').textContent = stats.acarsMessages;
+
+            // Update signal quality
+            updateSignalQuality();
+        }
+
+        // Session timer
+        let sessionTimerInterval = null;
+        function startSessionTimer() {
+            if (!stats.sessionStart) {
+                stats.sessionStart = Date.now();
+                sessionLog.startTime = new Date().toISOString();
+            }
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+        }
+
+        function stopSessionTimer() {
+            sessionLog.endTime = new Date().toISOString();
+        }
+
+        function updateSessionTimer() {
+            if (!stats.sessionStart) return;
+            const elapsed = Date.now() - stats.sessionStart;
+            const hours = Math.floor(elapsed / 3600000);
+            const mins = Math.floor((elapsed % 3600000) / 60000);
+            const secs = Math.floor((elapsed % 60000) / 1000);
+            document.getElementById('stripSession').textContent =
+                `${hours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        }
+
+        // Report generation
+        function generateReport() {
+            stopSessionTimer();
+
+            const report = {
+                title: 'ADS-B Session Report',
+                generated: new Date().toISOString(),
+                session: {
+                    start: sessionLog.startTime,
+                    end: sessionLog.endTime || new Date().toISOString(),
+                    duration: stats.sessionStart ? formatDuration(Date.now() - stats.sessionStart) : 'N/A'
+                },
+                location: {
+                    lat: observerLocation.lat,
+                    lon: observerLocation.lon
+                },
+                statistics: {
+                    totalAircraftSeen: stats.totalAircraftSeen.size,
+                    maxConcurrent: sessionLog.maxConcurrent,
+                    maxRange: stats.maxRange.toFixed(1) + ' nm',
+                    peakMessageRate: sessionLog.peakMsgRate.toFixed(1) + ' msg/s',
+                    countriesSeen: Array.from(stats.countriesSeen).sort(),
+                    acarsMessages: stats.acarsMessages
+                },
+                highlights: sessionLog.highlights,
+                aircraftLog: sessionLog.aircraftLog
+            };
+
+            // Show report modal
+            showReportModal(report);
+        }
+
+        function formatDuration(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const mins = Math.floor((ms % 3600000) / 60000);
+            const secs = Math.floor((ms % 60000) / 1000);
+            return `${hours}h ${mins}m ${secs}s`;
+        }
+
+        function showReportModal(report) {
+            const modal = document.createElement('div');
+            modal.className = 'report-modal';
+            modal.innerHTML = `
+                <div class="report-content">
+                    <div class="report-header">
+                        <h2>📊 Session Report</h2>
+                        <button class="report-close" onclick="this.closest('.report-modal').remove()">×</button>
+                    </div>
+                    <div class="report-body">
+                        <div class="report-section">
+                            <h3>Session Info</h3>
+                            <div class="report-grid">
+                                <span>Duration:</span><span>${report.session.duration}</span>
+                                <span>Location:</span><span>${report.location.lat.toFixed(4)}, ${report.location.lon.toFixed(4)}</span>
+                            </div>
+                        </div>
+                        <div class="report-section">
+                            <h3>Statistics</h3>
+                            <div class="report-grid">
+                                <span>Total Aircraft:</span><span>${report.statistics.totalAircraftSeen}</span>
+                                <span>Max Concurrent:</span><span>${report.statistics.maxConcurrent}</span>
+                                <span>Max Range:</span><span>${report.statistics.maxRange}</span>
+                                <span>Peak Msg Rate:</span><span>${report.statistics.peakMessageRate}</span>
+                                <span>Countries:</span><span>${report.statistics.countriesSeen.length} (${report.statistics.countriesSeen.slice(0,5).join(', ')}${report.statistics.countriesSeen.length > 5 ? '...' : ''})</span>
+                                <span>ACARS Messages:</span><span>${report.statistics.acarsMessages}</span>
+                            </div>
+                        </div>
+                        ${report.highlights.length > 0 ? `
+                        <div class="report-section">
+                            <h3>Highlights</h3>
+                            <div class="report-highlights">
+                                ${report.highlights.slice(0, 10).map(h => `
+                                    <div class="highlight-item ${h.type}">
+                                        <span class="highlight-type">${h.type.toUpperCase()}</span>
+                                        <span class="highlight-detail">${h.callsign}${h.country ? ' (' + h.country + ')' : ''}${h.name ? ' - ' + h.name : ''}</span>
+                                    </div>
+                                `).join('')}
+                                ${report.highlights.length > 10 ? `<div class="highlight-more">+${report.highlights.length - 10} more...</div>` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="report-section">
+                            <h3>Aircraft Log (${report.aircraftLog.length})</h3>
+                            <div class="report-table-wrap">
+                                <table class="report-table">
+                                    <thead>
+                                        <tr><th>ICAO</th><th>Callsign</th><th>Country</th><th>Type</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        ${report.aircraftLog.slice(0, 50).map(ac => `
+                                            <tr class="${ac.military ? 'military' : ''}">
+                                                <td>${ac.icao}</td>
+                                                <td>${ac.callsign || '-'}</td>
+                                                <td>${ac.country}</td>
+                                                <td>${ac.military ? '🎖️ MIL' : 'CIV'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                ${report.aircraftLog.length > 50 ? `<div class="report-more">Showing 50 of ${report.aircraftLog.length} aircraft</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="report-footer">
+                        <button class="report-btn" onclick="downloadReport()">💾 Download JSON</button>
+                        <button class="report-btn" onclick="copyReportToClipboard()">📋 Copy Summary</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Store report for download
+            window._currentReport = report;
+        }
+
+        function downloadReport() {
+            if (!window._currentReport) return;
+            const blob = new Blob([JSON.stringify(window._currentReport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `adsb-report-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyReportToClipboard() {
+            if (!window._currentReport) return;
+            const r = window._currentReport;
+            const summary = `ADS-B Session Report
+Duration: ${r.session.duration}
+Aircraft Seen: ${r.statistics.totalAircraftSeen}
+Max Concurrent: ${r.statistics.maxConcurrent}
+Max Range: ${r.statistics.maxRange}
+Countries: ${r.statistics.countriesSeen.join(', ')}
+Highlights: ${r.highlights.length} events
+ACARS: ${r.statistics.acarsMessages} messages`;
+            navigator.clipboard.writeText(summary).then(() => {
+                alert('Summary copied to clipboard');
+            });
+        }
+
+        // ============================================
+        // SIGNAL QUALITY
+        // ============================================
+        function updateSignalQuality() {
+            const msgRate = stats.messagesPerSecond;
+            const el = document.getElementById('stripSignal');
+            const stat = el.closest('.strip-stat');
+
+            if (!isTracking || msgRate === 0) {
+                el.textContent = '--';
+                stat.classList.remove('good', 'warning', 'poor');
+                return;
+            }
+
+            // Signal quality based on message rate
+            // Good: >10 msg/s, Warning: 2-10, Poor: <2
+            if (msgRate >= 10) {
+                el.textContent = '●●●';
+                stat.classList.remove('warning', 'poor');
+                stat.classList.add('good');
+            } else if (msgRate >= 2) {
+                el.textContent = '●●○';
+                stat.classList.remove('good', 'poor');
+                stat.classList.add('warning');
+            } else {
+                el.textContent = '●○○';
+                stat.classList.remove('good', 'warning');
+                stat.classList.add('poor');
+            }
+        }
+
+        // ============================================
+        // SQUAWK CODE REFERENCE
+        // ============================================
+        function showSquawkReference() {
+            const modal = document.createElement('div');
+            modal.className = 'squawk-modal';
+            modal.innerHTML = `
+                <div class="squawk-content">
+                    <div class="squawk-header">
+                        <h2>📟 Squawk Code Reference</h2>
+                        <button class="squawk-close" onclick="this.closest('.squawk-modal').remove()">×</button>
+                    </div>
+                    <div class="squawk-body">
+                        <div class="squawk-section emergency">
+                            <h3>🚨 Emergency Codes</h3>
+                            <div class="squawk-grid">
+                                <div class="squawk-item"><span class="squawk-code">7500</span><span class="squawk-name">HIJACK</span><span class="squawk-desc">Aircraft being hijacked - do not acknowledge</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7600</span><span class="squawk-name">RADIO FAIL</span><span class="squawk-desc">Two-way radio communication failure</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7700</span><span class="squawk-name">EMERGENCY</span><span class="squawk-desc">General emergency (mayday/pan-pan)</span></div>
+                            </div>
+                        </div>
+                        <div class="squawk-section special">
+                            <h3>⚠️ Special Codes</h3>
+                            <div class="squawk-grid">
+                                <div class="squawk-item"><span class="squawk-code">7777</span><span class="squawk-name">MIL INTERCEPT</span><span class="squawk-desc">Active military intercept operations</span></div>
+                                <div class="squawk-item"><span class="squawk-code">0000</span><span class="squawk-name">DISCRETE</span><span class="squawk-desc">Military/special operations</span></div>
+                                <div class="squawk-item"><span class="squawk-code">5000</span><span class="squawk-name">MILITARY UK</span><span class="squawk-desc">UK military low-level operations</span></div>
+                                <div class="squawk-item"><span class="squawk-code">0033</span><span class="squawk-name">PARA OPS</span><span class="squawk-desc">Parachute dropping operations</span></div>
+                            </div>
+                        </div>
+                        <div class="squawk-section standard">
+                            <h3>✈️ Standard VFR/IFR</h3>
+                            <div class="squawk-grid">
+                                <div class="squawk-item"><span class="squawk-code">1200</span><span class="squawk-name">VFR (US/CA)</span><span class="squawk-desc">Visual flight rules - North America</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7000</span><span class="squawk-name">VFR (EU)</span><span class="squawk-desc">Visual flight rules - ICAO/Europe</span></div>
+                                <div class="squawk-item"><span class="squawk-code">2000</span><span class="squawk-name">CONSPICUITY</span><span class="squawk-desc">Entering airspace, no code assigned</span></div>
+                                <div class="squawk-item"><span class="squawk-code">1000</span><span class="squawk-name">IFR (EU)</span><span class="squawk-desc">Instrument flight rules, no assigned code</span></div>
+                            </div>
+                        </div>
+                        <div class="squawk-section other">
+                            <h3>📋 Other Codes</h3>
+                            <div class="squawk-grid">
+                                <div class="squawk-item"><span class="squawk-code">4000</span><span class="squawk-name">FERRY</span><span class="squawk-desc">Aircraft delivery/repositioning</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7001</span><span class="squawk-name">VFR INTRUSION</span><span class="squawk-desc">VFR aircraft entering controlled space</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7004</span><span class="squawk-name">AEROBATIC</span><span class="squawk-desc">Aerobatic display flight</span></div>
+                                <div class="squawk-item"><span class="squawk-code">7010</span><span class="squawk-name">RADIO EQUIPPED</span><span class="squawk-desc">IFR flight (UK zones)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // ============================================
+        // FLIGHT LOOKUP
+        // ============================================
+        function lookupSelectedFlight() {
+            if (!selectedIcao || !aircraft[selectedIcao]) return;
+            const ac = aircraft[selectedIcao];
+            const callsign = ac.callsign?.trim();
+            const reg = ac.registration?.trim();
+
+            // Prefer callsign, then registration, then ICAO
+            let searchTerm = callsign || reg || selectedIcao;
+
+            // Open FlightAware search
+            const url = `https://flightaware.com/live/flight/${searchTerm}`;
+            window.open(url, '_blank');
+        }
+
+        function updateFlightLookupBtn() {
+            const btn = document.getElementById('flightLookupBtn');
+            if (selectedIcao && aircraft[selectedIcao]) {
+                btn.disabled = false;
+                const ac = aircraft[selectedIcao];
+                const label = ac.callsign || ac.registration || selectedIcao;
+                btn.title = `Lookup ${label} on FlightAware`;
+            } else {
+                btn.disabled = true;
+                btn.title = 'Select an aircraft first';
+            }
         }
 
         // ============================================
@@ -1547,6 +2145,7 @@ sudo make install</code>
                     if (data.status === 'success' || data.status === 'started' || data.status === 'already_running') {
                         startEventStream();
                         drawRangeRings();
+                        startSessionTimer();
                         isTracking = true;
                         adsbActiveDevice = adsbDevice;  // Track which device is being used
                         btn.textContent = 'STOP';
@@ -1704,15 +2303,16 @@ sudo make install</code>
             const color = militaryInfo.military ? '#556b2f' : getAltitudeColor(ac.altitude);
             const callsign = ac.callsign || icao;
             const alt = ac.altitude ? ac.altitude + ' ft' : 'N/A';
+            const iconType = getAircraftIconType(ac.type_code, militaryInfo.military);
 
             const prevState = markerState[icao] || {};
-            const iconChanged = prevState.rotation !== rotation || prevState.color !== color;
+            const iconChanged = prevState.rotation !== rotation || prevState.color !== color || prevState.iconType !== iconType;
             const tooltipChanged = prevState.callsign !== callsign || prevState.alt !== alt;
 
             if (markers[icao]) {
                 markers[icao].setLatLng([ac.lat, ac.lon]);
                 if (iconChanged) {
-                    markers[icao].setIcon(createMarkerIcon(rotation, color));
+                    markers[icao].setIcon(createMarkerIcon(rotation, color, iconType));
                 }
                 if (tooltipChanged) {
                     markers[icao].unbindTooltip();
@@ -1721,7 +2321,7 @@ sudo make install</code>
                     });
                 }
             } else {
-                markers[icao] = L.marker([ac.lat, ac.lon], { icon: createMarkerIcon(rotation, color) })
+                markers[icao] = L.marker([ac.lat, ac.lon], { icon: createMarkerIcon(rotation, color, iconType) })
                     .addTo(radarMap)
                     .on('click', () => selectAircraft(icao));
                 markers[icao].bindTooltip(`${callsign}<br>${alt}`, {
@@ -1729,17 +2329,59 @@ sudo make install</code>
                 });
             }
 
-            markerState[icao] = { rotation, color, callsign, alt };
+            markerState[icao] = { rotation, color, callsign, alt, iconType };
         }
 
-        function createMarkerIcon(rotation, color) {
+        // Aircraft type icon SVG paths
+        const AIRCRAFT_ICONS = {
+            jet: 'M12 2L8 10H4v2l8 4 8-4v-2h-4L12 2zm0 14l-6 3v1h12v-1l-6-3z',
+            helicopter: 'M12 4L10 6H8V8h1l3 8 3-8h1V6h-2L12 4zm-1 14v2H9v1h6v-1h-2v-2h-2zm7-7h-2v2h2v-2zM4 11h2v2H4v-2z',
+            prop: 'M12 3L9 8H5v2l7 6 7-6v-2h-4L12 3zm0 12l-4 2v1h8v-1l-4-2z',
+            military: 'M12 2L7 9H3l1 3 8 6 8-6 1-3h-4L12 2zm0 14l-5 2.5V20h10v-1.5L12 16z',
+            glider: 'M12 4L10 8H4v1.5l8 4 8-4V8h-6L12 4zm0 10l-6 2v1h12v-1l-6-2z'
+        };
+
+        // Determine aircraft type from type_code
+        function getAircraftIconType(typeCode, isMilitary) {
+            if (isMilitary) return 'military';
+            if (!typeCode) return 'jet';
+
+            const code = typeCode.toUpperCase();
+
+            // Helicopters
+            if (code.startsWith('H') || code.includes('HELI') ||
+                ['R22', 'R44', 'R66', 'EC35', 'EC45', 'AS50', 'AS55', 'AS65', 'B06', 'B212', 'B412', 'S76', 'A109', 'AW139', 'AW169'].some(h => code.includes(h))) {
+                return 'helicopter';
+            }
+
+            // Gliders
+            if (code.startsWith('G') || code.includes('GLID')) {
+                return 'glider';
+            }
+
+            // Light props (common GA aircraft)
+            if (['C150', 'C152', 'C172', 'C182', 'C206', 'C208', 'C210', 'PA28', 'PA32', 'PA34', 'PA44', 'PA46', 'SR20', 'SR22', 'DA40', 'DA42', 'TB20', 'M20', 'BE35', 'BE36', 'BE58'].some(p => code.includes(p))) {
+                return 'prop';
+            }
+
+            // Turboprops
+            if (['ATR', 'DH8', 'DHC', 'SF34', 'J328', 'B190', 'PC12', 'TBM'].some(t => code.includes(t))) {
+                return 'prop';
+            }
+
+            return 'jet';
+        }
+
+        function createMarkerIcon(rotation, color, iconType = 'jet') {
+            const path = AIRCRAFT_ICONS[iconType] || AIRCRAFT_ICONS.jet;
+            const size = iconType === 'helicopter' ? 22 : 24;
             return L.divIcon({
-                className: 'aircraft-marker',
-                html: `<svg width="24" height="24" viewBox="0 0 24 24" style="transform: rotate(${rotation}deg); color: ${color}; filter: drop-shadow(0 0 5px ${color});">
-                    <path fill="currentColor" d="M12 2L8 10H4v2l8 4 8-4v-2h-4L12 2zm0 14l-6 3v1h12v-1l-6-3z"/>
+                className: `aircraft-marker aircraft-${iconType}`,
+                html: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="transform: rotate(${rotation}deg); color: ${color}; filter: drop-shadow(0 0 5px ${color});">
+                    <path fill="currentColor" d="${path}"/>
                 </svg>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
             });
         }
 
@@ -1852,6 +2494,7 @@ sudo make install</code>
             selectedIcao = icao;
             renderAircraftList();
             showAircraftDetails(icao);
+            updateFlightLookupBtn();
 
             const ac = aircraft[icao];
             if (ac && ac.lat && ac.lon && currentView === 'map') {
@@ -2008,6 +2651,7 @@ sudo make install</code>
                     if (selectedIcao === icao) {
                         selectedIcao = null;
                         showAircraftDetails(null);
+                        updateFlightLookupBtn();
                     }
                 }
             });
@@ -2438,7 +3082,9 @@ sudo make install</code>
                 const data = JSON.parse(e.data);
                 if (data.type === 'acars') {
                     acarsMessageCount++;
+                    stats.acarsMessages++;
                     document.getElementById('acarsCount').textContent = acarsMessageCount;
+                    document.getElementById('stripAcars').textContent = stats.acarsMessages;
                     addAcarsMessage(data);
                 }
             };
