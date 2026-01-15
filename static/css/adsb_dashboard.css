@@ -448,15 +448,31 @@ body {
 
 /* Main display container (map + radar scope) */
 .main-display {
-    grid-column: 2;
-    grid-row: 1;
     position: relative;
+    flex: 1;
+    min-height: 300px;
+}
+
+@media (min-width: 768px) {
+    .main-display {
+        grid-column: 1;
+        grid-row: 1;
+    }
+}
+
+@media (min-width: 1024px) {
+    .main-display {
+        grid-column: 2;
+        grid-row: 1;
+    }
 }
 
 .display-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 #radarMap {
@@ -1044,10 +1060,8 @@ body {
 
 /* ============== MOBILE FIXES ============== */
 @media (max-width: 767px) {
-    /* Dashboard should be scrollable, not fixed height */
+    /* Dashboard - allow scrolling */
     .dashboard {
-        display: flex;
-        flex-direction: column;
         height: auto;
         min-height: calc(100dvh - 60px);
         overflow-y: auto;
@@ -1055,47 +1069,17 @@ body {
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Main display needs explicit height on mobile - reset grid properties */
+    /* Main display - explicit height for map */
     .main-display {
-        grid-column: auto;
-        grid-row: auto;
-        width: 100%;
+        flex: none;
         height: 50vh;
         min-height: 300px;
-        flex-shrink: 0;
-        order: 1;
     }
 
-    /* Map container needs full dimensions */
-    .display-container {
-        height: 100%;
-        width: 100%;
-    }
-
-    #radarMap {
-        height: 100% !important;
-        width: 100% !important;
-        min-height: 300px;
-    }
-
-    #radarScope {
-        height: 100%;
-    }
-
-    #radarCanvas {
-        max-width: 100%;
-        max-height: 100%;
-    }
-
-    /* Sidebar should not be height restricted */
+    /* Sidebar - stack below map */
     .sidebar {
-        grid-column: auto;
-        grid-row: auto;
         max-height: none;
         flex-shrink: 0;
-        order: 2;
-        border-left: none;
-        border-top: 1px solid rgba(74, 158, 255, 0.2);
     }
 
     /* Hide ACARS sidebar on mobile */
