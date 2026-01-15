@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
 from datetime import datetime
@@ -59,6 +61,25 @@ def find_multimon_ng() -> Optional[str]:
 def find_rtl_fm() -> Optional[str]:
     """Find rtl_fm binary."""
     return shutil.which('rtl_fm')
+
+
+# Path to direwolf config file
+DIREWOLF_CONFIG_PATH = os.path.join(tempfile.gettempdir(), 'intercept_direwolf.conf')
+
+
+def create_direwolf_config() -> str:
+    """Create a minimal direwolf config for receive-only operation."""
+    config = """# Minimal direwolf config for INTERCEPT (receive-only)
+# Audio input is handled via stdin
+
+ADEVICE stdin null
+CHANNEL 0
+MYCALL N0CALL
+MODEM 1200
+"""
+    with open(DIREWOLF_CONFIG_PATH, 'w') as f:
+        f.write(config)
+    return DIREWOLF_CONFIG_PATH
 
 
 def parse_aprs_packet(raw_packet: str) -> Optional[dict]:
@@ -436,14 +457,18 @@ def start_aprs() -> Response:
 
     # Build decoder command
     if direwolf_path:
+        # Create minimal config file for direwolf
+        config_path = create_direwolf_config()
+
         # direwolf flags for receiving AFSK1200 from stdin:
+        # -c config = config file path
         # -n 1 = mono audio channel
         # -r 22050 = sample rate
         # -b 16 = 16-bit samples
         # -t 0 = disable text colors (for cleaner parsing)
         # -q h = quiet mode - suppress audio level heard line (keeps packet output)
         # - = read from stdin
-        decoder_cmd = [direwolf_path, '-n', '1', '-r', '22050', '-b', '16', '-t', '0', '-q', 'h', '-']
+        decoder_cmd = [direwolf_path, '-c', config_path, '-n', '1', '-r', '22050', '-b', '16', '-t', '0', '-q', 'h', '-']
         decoder_name = 'direwolf'
     else:
         decoder_cmd = [multimon_path, '-t', 'raw', '-a', 'AFSK1200', '-']
