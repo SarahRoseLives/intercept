@@ -166,14 +166,6 @@ check_tools() {
   echo
   info "SoapySDR:"
   check_required "SoapySDRUtil" "SoapySDR CLI utility" SoapySDRUtil
-
-  echo
-  info "GSM (optional):"
-  if have_any grgsm_scanner; then
-    ok "grgsm_scanner - GSM cell scanner"
-  else
-    warn "grgsm_scanner - GSM cell scanner (optional, for ISMS GSM detection)"
-  fi
   echo
 }
 
@@ -360,8 +352,6 @@ install_macos_packages() {
 
   warn "macOS note: hcitool/hciconfig are Linux (BlueZ) utilities and often unavailable on macOS."
   info "TSCM BLE scanning uses bleak library (installed via pip) for manufacturer data detection."
-  warn "macOS note: gr-gsm (for GSM cell scanning) is not easily available on macOS."
-  info "GSM cell detection in ISMS mode requires Linux with GNU Radio."
   echo
 }
 
@@ -456,167 +446,6 @@ install_acarsdec_from_source_debian() {
       warn "Failed to build acarsdec from source. ACARS decoding will not be available."
     fi
   )
-}
-
-install_grgsm_from_source_debian() {
-  info "Installing gr-gsm for GSM cell scanning (optional)..."
-
-  # Check if GNU Radio is available
-  if ! cmd_exists gnuradio-config-info; then
-    info "GNU Radio not found. Installing GNU Radio first..."
-    if ! $SUDO apt-get install -y gnuradio gnuradio-dev; then
-      warn "Failed to install GNU Radio. gr-gsm requires GNU Radio 3.8+."
-      warn "GSM scanning will not be available."
-      return 1
-    fi
-  fi
-
-  # Check GNU Radio version (need 3.8+)
-  local gr_version
-  gr_version=$(gnuradio-config-info --version 2>/dev/null || echo "0.0.0")
-  info "GNU Radio version: $gr_version"
-
-  # Install basic build dependencies first
-  info "Installing gr-gsm build dependencies..."
-  $SUDO apt-get install -y \
-    cmake \
-    autoconf \
-    automake \
-    libtool \
-    pkg-config \
-    build-essential \
-    python3-docutils \
-    libcppunit-dev \
-    swig \
-    doxygen \
-    liblog4cpp5-dev \
-    python3-scipy \
-    python3-numpy \
-    gnuradio-dev \
-    gr-osmosdr \
-    libtalloc-dev \
-    libpcsclite-dev \
-    libusb-1.0-0-dev \
-    libgnutls28-dev \
-    libmnl-dev \
-    libsctp-dev \
-    pybind11-dev \
-    python3-pybind11 \
-    || warn "Some build dependencies failed to install."
-
-  # Check if libosmocore is available via apt
-  info "Checking for libosmocore packages..."
-  if ! $SUDO apt-get install -y libosmocore-dev 2>/dev/null; then
-    info "libosmocore not available in repos, building from source..."
-
-    # Build libosmocore from source
-    local osmo_tmp
-    osmo_tmp="$(mktemp -d)"
-
-    info "Cloning libosmocore..."
-    if git clone --depth 1 https://gitea.osmocom.org/osmocom/libosmocore.git "$osmo_tmp/libosmocore"; then
-      cd "$osmo_tmp/libosmocore"
-
-      info "Building libosmocore (this may take a few minutes)..."
-      autoreconf -fi
-      ./configure --prefix=/usr/local
-      if make -j$(nproc) && $SUDO make install && $SUDO ldconfig; then
-        ok "libosmocore built and installed successfully"
-      else
-        warn "Failed to build libosmocore from source"
-        cd /
-        rm -rf "$osmo_tmp"
-        return 1
-      fi
-
-      cd /
-      rm -rf "$osmo_tmp"
-    else
-      warn "Failed to clone libosmocore"
-      rm -rf "$osmo_tmp"
-      return 1
-    fi
-  else
-    ok "libosmocore installed from packages"
-    # Also try to install the other osmo packages
-    $SUDO apt-get install -y \
-      libosmocoding-dev \
-      libosmoctrl-dev \
-      libosmogsm-dev \
-      libosmovty-dev \
-      libosmocodec-dev \
-      2>/dev/null || true
-  fi
-
-  # Build gr-gsm
-  local tmp_dir
-  tmp_dir="$(mktemp -d)"
-
-  # Check GNU Radio version to select correct gr-gsm fork
-  local gr_major gr_minor
-  gr_major=$(gnuradio-config-info --version 2>/dev/null | cut -d. -f1 || echo "3")
-  gr_minor=$(gnuradio-config-info --version 2>/dev/null | cut -d. -f2 || echo "8")
-
-  local grgsm_repo grgsm_branch
-  if [[ "$gr_major" -ge 3 && "$gr_minor" -ge 10 ]]; then
-    # GNU Radio 3.10+ needs velichkov fork with maint-3.10 branch
-    info "GNU Radio 3.10+ detected, using velichkov fork (maint-3.10 branch)..."
-    grgsm_repo="https://github.com/velichkov/gr-gsm.git"
-    grgsm_branch="maint-3.10"
-
-    # Install pybind11 for GNU Radio 3.10+
-    $SUDO apt-get install -y pybind11-dev python3-pybind11 || true
-  else
-    # Older GNU Radio versions use original repo with SWIG
-    info "GNU Radio < 3.10 detected, using original gr-gsm..."
-    grgsm_repo="https://github.com/ptrkrysik/gr-gsm.git"
-    grgsm_branch="master"
-  fi
-
-  info "Cloning gr-gsm from $grgsm_repo..."
-  if ! git clone --depth 1 -b "$grgsm_branch" "$grgsm_repo" "$tmp_dir/gr-gsm"; then
-    warn "Failed to clone gr-gsm repository"
-    rm -rf "$tmp_dir"
-    return 1
-  fi
-
-  cd "$tmp_dir/gr-gsm"
-  mkdir -p build && cd build
-
-  info "Configuring gr-gsm..."
-  # Include /usr/local in CMAKE_PREFIX_PATH for source-built libosmocore
-  if ! cmake -DCMAKE_PREFIX_PATH="/usr/local;/usr" -DCMAKE_INSTALL_PREFIX=/usr/local ..; then
-    warn "Failed to configure gr-gsm (cmake failed)"
-    warn "Check that all dependencies are installed"
-    cd /
-    rm -rf "$tmp_dir"
-    return 1
-  fi
-
-  info "Compiling gr-gsm (this may take a few minutes)..."
-  if ! make -j$(nproc); then
-    warn "Failed to compile gr-gsm"
-    warn "Check the build output above for errors"
-    cd /
-    rm -rf "$tmp_dir"
-    return 1
-  fi
-
-  info "Installing gr-gsm..."
-  if $SUDO make install && $SUDO ldconfig; then
-    ok "gr-gsm installed successfully."
-    info "grgsm_scanner should now be available for GSM cell detection."
-  else
-    warn "Failed to install gr-gsm"
-    cd /
-    rm -rf "$tmp_dir"
-    return 1
-  fi
-
-  # Cleanup
-  cd /
-  rm -rf "$tmp_dir"
-  return 0
 }
 
 install_rtlsdr_blog_drivers_debian() {
@@ -718,24 +547,14 @@ install_debian_packages() {
   export DEBIAN_FRONTEND=noninteractive
   export NEEDRESTART_MODE=a
 
-  TOTAL_STEPS=19
+  TOTAL_STEPS=18
   CURRENT_STEP=0
 
   progress "Updating APT package lists"
   $SUDO apt-get update -y >/dev/null
 
-  # Fix any broken RTL-SDR packages first (common issue with Blog drivers vs stock)
-  info "Fixing RTL-SDR package conflicts..."
-  # Force remove broken packages
-  $SUDO dpkg --remove --force-remove-reinstreq librtlsdr0 librtlsdr2 librtlsdr-dev rtl-sdr 2>/dev/null || true
-  $SUDO apt-get -f install -y 2>/dev/null || true
-  $SUDO dpkg --configure -a 2>/dev/null || true
-  $SUDO apt-get autoremove -y --purge 2>/dev/null || true
-
   progress "Installing RTL-SDR"
-  # Skip apt rtl-sdr package - we'll use RTL-SDR Blog drivers instead which are better
-  # The stock packages often conflict with the Blog drivers
-  info "Skipping stock rtl-sdr package (RTL-SDR Blog drivers will be used instead)"
+  apt_install rtl-sdr
 
   progress "Installing RTL-SDR Blog drivers (V4 support)"
   install_rtlsdr_blog_drivers_debian
@@ -797,13 +616,6 @@ install_debian_packages() {
     apt_install acarsdec || true
   fi
   cmd_exists acarsdec || install_acarsdec_from_source_debian
-
-  progress "Installing gr-gsm (optional, for GSM cell detection)"
-  if ! cmd_exists grgsm_scanner; then
-    install_grgsm_from_source_debian || true
-  else
-    ok "grgsm_scanner already installed"
-  fi
 
   progress "Configuring udev rules"
   setup_udev_rules_debian

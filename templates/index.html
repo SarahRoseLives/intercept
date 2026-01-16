@@ -112,11 +112,6 @@
                             <span class="mode-name">APRS</span>
                             <span class="mode-desc">Amateur radio</span>
                         </button>
-                        <button class="mode-card" onclick="selectMode('isms')">
-                            <span class="mode-icon">📊</span>
-                            <span class="mode-name">ISMS</span>
-                            <span class="mode-desc">Spectrum monitoring</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -390,7 +385,6 @@
             </button>
             <div class="mode-nav-dropdown-menu">
                 <button class="mode-nav-btn" onclick="switchMode('tscm')"><span class="nav-icon">🔍</span><span class="nav-label">TSCM</span></button>
-                <button class="mode-nav-btn" onclick="switchMode('isms')"><span class="nav-icon">📊</span><span class="nav-label">ISMS Station</span></button>
             </div>
         </div>
         <div class="mode-nav-actions">
@@ -409,7 +403,6 @@
         <button class="mobile-nav-btn" data-mode="wifi" onclick="switchMode('wifi')">📶 WiFi</button>
         <button class="mobile-nav-btn" data-mode="bluetooth" onclick="switchMode('bluetooth')">🔵 BT</button>
         <button class="mobile-nav-btn" data-mode="tscm" onclick="switchMode('tscm')">🔍 TSCM</button>
-        <button class="mobile-nav-btn" data-mode="isms" onclick="switchMode('isms')">📊 ISMS</button>
         <button class="mobile-nav-btn" data-mode="satellite" onclick="switchMode('satellite')">🛰️ Sat</button>
         <button class="mobile-nav-btn" data-mode="listening" onclick="switchMode('listening')">📻 Scanner</button>
     </nav>
@@ -507,8 +500,6 @@
                 {% include 'partials/modes/listening-post.html' %}
 
                 {% include 'partials/modes/tscm.html' %}
-
-                {% include 'partials/modes/isms.html' %}
 
                 <button class="preset-btn" onclick="killAll()" style="width: 100%; margin-top: 10px; border-color: #ff3366; color: #ff3366;">
                     Kill All Processes
@@ -1121,113 +1112,6 @@
                     </div>
                 </div>
 
-                <!-- ISMS Listening Station Dashboard -->
-                <div id="ismsVisuals" class="isms-dashboard" style="display: none; padding: 16px;">
-                    <!-- Legal/Info Banner -->
-                    <div class="isms-info-banner" style="margin-bottom: 12px; padding: 8px 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 4px; font-size: 10px; color: var(--text-muted);">
-                        <strong>ISMS Listening Station:</strong> RF spectrum monitoring for situational awareness.
-                        Requires rtl_power. Tower data from OpenCelliD (API token required).
-                    </div>
-
-                    <!-- Main Grid Layout -->
-                    <div class="isms-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-
-                        <!-- Band Activity Meters -->
-                        <div class="isms-panel" style="grid-column: span 4; background: var(--bg-card); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
-                            <div class="isms-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Band Activity</span>
-                                <span id="ismsScanStatus" style="font-size: 10px; color: var(--accent-cyan);">IDLE</span>
-                            </div>
-                            <div id="ismsBandMeters" style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                                <div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">
-                                    Start a scan to see band activity
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Top Peaks -->
-                        <div class="isms-panel" style="grid-column: span 2; background: var(--bg-card); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
-                            <div class="isms-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Top Peaks</span>
-                                <span id="ismsPeakCount" style="font-size: 10px; color: var(--accent-cyan);">0</span>
-                            </div>
-                            <div id="ismsPeaksList" style="max-height: 200px; overflow-y: auto;">
-                                <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="color: var(--text-muted); text-transform: uppercase;">
-                                            <th style="text-align: left; padding: 4px 8px;">Freq</th>
-                                            <th style="text-align: right; padding: 4px 8px;">Power</th>
-                                            <th style="text-align: left; padding: 4px 8px;">Band</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ismsPeaksBody">
-                                        <tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">No peaks detected</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Nearby Towers Map -->
-                        <div class="isms-panel" style="grid-column: span 2; background: var(--bg-card); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
-                            <div class="isms-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Nearby Towers</span>
-                                <button class="preset-btn" onclick="ismsRefreshTowers()" style="padding: 2px 8px; font-size: 9px;">Refresh</button>
-                            </div>
-                            <div id="ismsTowerMap" style="height: 180px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 11px;">
-                                    Set location and query towers
-                                </div>
-                            </div>
-                            <div id="ismsTowerList" style="max-height: 80px; overflow-y: auto; font-size: 10px;">
-                                <!-- Tower list items will appear here -->
-                            </div>
-                        </div>
-
-                        <!-- Findings Timeline -->
-                        <div class="isms-panel" style="grid-column: span 4; background: var(--bg-card); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
-                            <div class="isms-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Findings</span>
-                                <div style="display: flex; gap: 8px;">
-                                    <span id="ismsFindingsHigh" class="isms-badge isms-badge-high" style="display: none;">0 HIGH</span>
-                                    <span id="ismsFindingsWarn" class="isms-badge isms-badge-warn" style="display: none;">0 WARN</span>
-                                    <span id="ismsFindingsInfo" class="isms-badge isms-badge-info">0 INFO</span>
-                                </div>
-                            </div>
-                            <div id="ismsFindingsTimeline" style="max-height: 150px; overflow-y: auto;">
-                                <div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">
-                                    No findings yet. Start a scan and enable baseline comparison.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Baseline Comparison (collapsible) -->
-                        <div class="isms-panel collapsible" style="grid-column: span 4; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
-                            <div class="isms-panel-header clickable" onclick="ismsToggleBaselinePanel()" style="padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                                    <span id="ismsBaselinePanelIcon">▶</span> Baseline Comparison
-                                </span>
-                                <span id="ismsBaselineStatus" style="font-size: 10px; color: var(--text-muted);">No baseline selected</span>
-                            </div>
-                            <div id="ismsBaselineCompare" style="display: none; padding: 0 12px 12px 12px;">
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Noise Floor Delta</div>
-                                        <div id="ismsNoiseFloorDelta" style="font-size: 18px; font-weight: bold; color: var(--accent-cyan);">-- dB</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Activity Delta</div>
-                                        <div id="ismsActivityDelta" style="font-size: 18px; font-weight: bold; color: var(--accent-cyan);">--%</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase;">New Peaks</div>
-                                        <div id="ismsNewPeaks" style="font-size: 18px; font-weight: bold; color: var(--accent-cyan);">--</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Device Intelligence Dashboard (above waterfall for prominence) -->
                 <div class="recon-panel collapsed" id="reconPanel">
                     <div class="recon-header" onclick="toggleReconCollapse()" style="cursor: pointer;">
@@ -1301,7 +1185,6 @@
     <script src="{{ url_for('static', filename='js/core/audio.js') }}"></script>
     <script src="{{ url_for('static', filename='js/components/radio-knob.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modes/listening-post.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/modes/isms.js') }}"></script>
 
     <script>
         // Selected mode from welcome screen
@@ -1649,7 +1532,7 @@
                 'pager': 'sdr', 'sensor': 'sdr',
                 'aprs': 'sdr', 'satellite': 'sdr', 'listening': 'sdr',
                 'wifi': 'wireless', 'bluetooth': 'wireless',
-                'tscm': 'security', 'isms': 'security'
+                'tscm': 'security'
             };
 
             // Remove has-active from all dropdowns
@@ -1707,7 +1590,6 @@
             document.getElementById('listeningPostMode').classList.toggle('active', mode === 'listening');
             document.getElementById('aprsMode').classList.toggle('active', mode === 'aprs');
             document.getElementById('tscmMode').classList.toggle('active', mode === 'tscm');
-            document.getElementById('ismsMode').classList.toggle('active', mode === 'isms');
             document.getElementById('pagerStats').style.display = mode === 'pager' ? 'flex' : 'none';
             document.getElementById('sensorStats').style.display = mode === 'sensor' ? 'flex' : 'none';
             document.getElementById('satelliteStats').style.display = mode === 'satellite' ? 'flex' : 'none';
@@ -1733,8 +1615,7 @@
                 'bluetooth': 'BLUETOOTH',
                 'listening': 'LISTENING POST',
                 'aprs': 'APRS',
-                'tscm': 'TSCM',
-                'isms': 'ISMS STATION'
+                'tscm': 'TSCM'
             };
             document.getElementById('activeModeIndicator').innerHTML = '<span class="pulse-dot"></span>' + modeNames[mode];
             document.getElementById('wifiLayoutContainer').style.display = mode === 'wifi' ? 'flex' : 'none';
@@ -1743,12 +1624,6 @@
             document.getElementById('listeningPostVisuals').style.display = mode === 'listening' ? 'grid' : 'none';
             document.getElementById('aprsVisuals').style.display = mode === 'aprs' ? 'flex' : 'none';
             document.getElementById('tscmVisuals').style.display = mode === 'tscm' ? 'flex' : 'none';
-            document.getElementById('ismsVisuals').style.display = mode === 'isms' ? 'block' : 'none';
-
-            // Initialize ISMS mode when switching to it
-            if (mode === 'isms' && typeof initIsmsMode === 'function') {
-                initIsmsMode();
-            }
 
             // Update output panel title based on mode
             const titles = {
@@ -1759,8 +1634,7 @@
                 'bluetooth': 'Bluetooth Scanner',
                 'listening': 'Listening Post',
                 'aprs': 'APRS Tracker',
-                'tscm': 'TSCM Counter-Surveillance',
-                'isms': 'ISMS Listening Station'
+                'tscm': 'TSCM Counter-Surveillance'
             };
             document.getElementById('outputTitle').textContent = titles[mode] || 'Signal Monitor';
 
