@@ -464,11 +464,11 @@ install_grgsm_from_source_debian() {
   # Check if GNU Radio is available
   if ! cmd_exists gnuradio-config-info; then
     info "GNU Radio not found. Installing GNU Radio first..."
-    $SUDO apt-get install -y gnuradio gnuradio-dev >/dev/null 2>&1 || {
+    if ! $SUDO apt-get install -y gnuradio gnuradio-dev; then
       warn "Failed to install GNU Radio. gr-gsm requires GNU Radio 3.8+."
       warn "GSM scanning will not be available."
       return 1
-    }
+    fi
   fi
 
   # Check GNU Radio version (need 3.8+)
@@ -498,35 +498,58 @@ install_grgsm_from_source_debian() {
     libosmogsm-dev \
     libosmovty-dev \
     libosmocodec-dev \
-    >/dev/null 2>&1 || {
+    || {
       warn "Some gr-gsm dependencies failed to install."
       warn "Attempting to continue anyway..."
     }
 
-  # Run in subshell to isolate EXIT trap
-  (
-    tmp_dir="$(mktemp -d)"
-    trap 'rm -rf "$tmp_dir"' EXIT
+  # Build gr-gsm
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
 
-    info "Cloning gr-gsm..."
-    git clone --depth 1 https://github.com/ptrkrysik/gr-gsm.git "$tmp_dir/gr-gsm" >/dev/null 2>&1 \
-      || { warn "Failed to clone gr-gsm"; exit 1; }
+  info "Cloning gr-gsm..."
+  if ! git clone --depth 1 https://github.com/ptrkrysik/gr-gsm.git "$tmp_dir/gr-gsm"; then
+    warn "Failed to clone gr-gsm repository"
+    rm -rf "$tmp_dir"
+    return 1
+  fi
 
-    cd "$tmp_dir/gr-gsm"
-    mkdir -p build && cd build
+  cd "$tmp_dir/gr-gsm"
+  mkdir -p build && cd build
 
-    info "Compiling gr-gsm (this may take a few minutes)..."
-    if cmake .. >/dev/null 2>&1 && make -j$(nproc) >/dev/null 2>&1; then
-      $SUDO make install >/dev/null 2>&1
-      $SUDO ldconfig
-      ok "gr-gsm installed successfully."
-      info "grgsm_scanner should now be available for GSM cell detection."
-    else
-      warn "Failed to build gr-gsm from source."
-      warn "GSM cell scanning will not be available in ISMS mode."
-      warn "You can try installing manually from: https://github.com/ptrkrysik/gr-gsm"
-    fi
-  )
+  info "Configuring gr-gsm..."
+  if ! cmake ..; then
+    warn "Failed to configure gr-gsm (cmake failed)"
+    warn "Check that all dependencies are installed"
+    cd /
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  info "Compiling gr-gsm (this may take a few minutes)..."
+  if ! make -j$(nproc); then
+    warn "Failed to compile gr-gsm"
+    warn "Check the build output above for errors"
+    cd /
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  info "Installing gr-gsm..."
+  if $SUDO make install && $SUDO ldconfig; then
+    ok "gr-gsm installed successfully."
+    info "grgsm_scanner should now be available for GSM cell detection."
+  else
+    warn "Failed to install gr-gsm"
+    cd /
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  # Cleanup
+  cd /
+  rm -rf "$tmp_dir"
+  return 0
 }
 
 install_rtlsdr_blog_drivers_debian() {
