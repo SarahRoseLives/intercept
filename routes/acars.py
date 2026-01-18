@@ -52,35 +52,34 @@ def find_acarsdec():
 def get_acarsdec_json_flag(acarsdec_path: str) -> str:
     """Detect which JSON output flag acarsdec supports.
 
-    Modern versions (TLeconte) use -j, very old versions used -o 4.
-    Default to -j as it's the standard for current acarsdec builds.
+    Version 4.0+ uses -j for JSON stdout.
+    Version 3.x uses -o 4 for JSON stdout.
     """
     try:
-        # Try both -h and --help
-        for help_flag in ['-h', '--help']:
-            try:
-                result = subprocess.run(
-                    [acarsdec_path, help_flag],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                help_text = result.stdout + result.stderr
+        # Get version by running acarsdec with no args (shows usage with version)
+        result = subprocess.run(
+            [acarsdec_path],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        output = result.stdout + result.stderr
 
-                # Check if -j flag is documented in help
-                if ' -j' in help_text or '\n-j' in help_text or '-j ' in help_text:
-                    return '-j'
+        # Parse version from output like "Acarsdec v4.3.1" or "Acarsdec/acarsserv 3.7"
+        import re
+        version_match = re.search(r'acarsdec[^\d]*v?(\d+)\.(\d+)', output, re.IGNORECASE)
+        if version_match:
+            major = int(version_match.group(1))
+            # Version 4.0+ uses -j for JSON stdout
+            if major >= 4:
+                return '-j'
+            # Version 3.x uses -o for output mode
+            else:
+                return '-o'
+    except Exception as e:
+        logger.debug(f"Could not detect acarsdec version: {e}")
 
-                # Only return -o if we explicitly see it supports output modes
-                if '-o' in help_text and 'output' in help_text.lower():
-                    return '-o'
-            except Exception:
-                continue
-    except Exception:
-        pass
-
-    # Default to -j (modern standard for TLeconte acarsdec)
-    # Most builds from source use this format
+    # Default to -j (modern standard for current builds from source)
     return '-j'
 
 
