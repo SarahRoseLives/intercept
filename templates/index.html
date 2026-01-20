@@ -375,6 +375,8 @@
                         class="nav-label">Pager</span></button>
                 <button class="mode-nav-btn" onclick="switchMode('sensor')"><span class="nav-icon">📡</span><span
                         class="nav-label">433MHz</span></button>
+                <button class="mode-nav-btn" onclick="switchMode('rtlamr')"><span class="nav-icon">⚡</span><span
+                        class="nav-label">Meters</span></button>
                 <a href="/adsb/dashboard" class="mode-nav-btn" style="text-decoration: none;"><span
                         class="nav-icon">✈️</span><span class="nav-label">Aircraft</span></a>
                 <button class="mode-nav-btn" onclick="switchMode('aprs')"><span class="nav-icon">📍</span><span
@@ -440,6 +442,7 @@
     <nav class="mobile-nav-bar" id="mobileNavBar">
         <button class="mobile-nav-btn active" data-mode="pager" onclick="switchMode('pager')">📟 Pager</button>
         <button class="mobile-nav-btn" data-mode="sensor" onclick="switchMode('sensor')">📡 433MHz</button>
+        <button class="mobile-nav-btn" data-mode="rtlamr" onclick="switchMode('rtlamr')">⚡ Meters</button>
         <a href="/adsb/dashboard" class="mobile-nav-btn" style="text-decoration: none;">✈️ Aircraft</a>
         <button class="mobile-nav-btn" data-mode="aprs" onclick="switchMode('aprs')">📍 APRS</button>
         <button class="mobile-nav-btn" data-mode="wifi" onclick="switchMode('wifi')">📶 WiFi</button>
@@ -542,6 +545,8 @@
                 {% include 'partials/modes/pager.html' %}
 
                 {% include 'partials/modes/sensor.html' %}
+                
+                {% include 'partials/modes/rtlamr.html' %}
 
                 {% include 'partials/modes/wifi.html' %}
 
@@ -1974,6 +1979,7 @@
             });
             document.getElementById('pagerMode').classList.toggle('active', mode === 'pager');
             document.getElementById('sensorMode').classList.toggle('active', mode === 'sensor');
+            document.getElementById('rtlamrMode').classList.toggle('active', mode === 'rtlamr');
             document.getElementById('satelliteMode').classList.toggle('active', mode === 'satellite');
             document.getElementById('wifiMode').classList.toggle('active', mode === 'wifi');
             document.getElementById('bluetoothMode').classList.toggle('active', mode === 'bluetooth');
@@ -2000,6 +2006,7 @@
             const modeNames = {
                 'pager': 'PAGER',
                 'sensor': '433MHZ',
+                'rtlamr': 'METERS',
                 'satellite': 'SATELLITE',
                 'wifi': 'WIFI',
                 'bluetooth': 'BLUETOOTH',
@@ -2019,6 +2026,7 @@
             const titles = {
                 'pager': 'Pager Decoder',
                 'sensor': '433MHz Sensor Monitor',
+                'rtlamr': 'Utility Meter Monitor',
                 'satellite': 'Satellite Monitor',
                 'wifi': 'WiFi Scanner',
                 'bluetooth': 'Bluetooth Scanner',
@@ -2051,7 +2059,7 @@
             }
 
             // Show RTL-SDR device section for modes that use it
-            document.getElementById('rtlDeviceSection').style.display = (mode === 'pager' || mode === 'sensor' || mode === 'listening' || mode === 'aprs') ? 'block' : 'none';
+            document.getElementById('rtlDeviceSection').style.display = (mode === 'pager' || mode === 'sensor' || mode === 'rtlamr' || mode === 'listening' || mode === 'aprs') ? 'block' : 'none';
 
             // Toggle mode-specific tool status displays
             document.getElementById('toolStatusPager').style.display = (mode === 'pager') ? 'grid' : 'none';
@@ -2273,6 +2281,183 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: enabled, log_file: 'sensor_data.log' })
+            });
+        }
+
+        // ========================================
+        // RTLAMR Functions
+        // ========================================
+        let isRtlamrRunning = false;
+
+        function setRtlamrFreq(freq) {
+            document.getElementById('rtlamrFrequency').value = freq;
+        }
+
+        function startRtlamrDecoding() {
+            const freq = document.getElementById('rtlamrFrequency').value;
+            const gain = document.getElementById('rtlamrGain').value;
+            const ppm = document.getElementById('rtlamrPpm').value;
+            const device = getSelectedDevice();
+            const msgtype = document.getElementById('rtlamrMsgType').value;
+            const filterid = document.getElementById('rtlamrFilterId').value;
+            const unique = document.getElementById('rtlamrUnique').checked;
+
+            // Check if device is available
+            if (!checkDeviceAvailability('rtlamr')) {
+                return;
+            }
+
+            const config = {
+                frequency: freq,
+                gain: gain,
+                ppm: ppm,
+                device: device,
+                msgtype: msgtype,
+                filterid: filterid,
+                unique: unique,
+                format: 'json'
+            };
+
+            fetch('/start_rtlamr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            }).then(r => r.json())
+                .then(data => {
+                    if (data.status === 'started') {
+                        reserveDevice(parseInt(device), 'rtlamr');
+                        setRtlamrRunning(true);
+                        startRtlamrStream();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                });
+        }
+
+        function stopRtlamrDecoding() {
+            fetch('/stop_rtlamr', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    releaseDevice('rtlamr');
+                    setRtlamrRunning(false);
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                });
+        }
+
+        function setRtlamrRunning(running) {
+            isRtlamrRunning = running;
+            document.getElementById('statusDot').classList.toggle('running', running);
+            document.getElementById('statusText').textContent = running ? 'Listening...' : 'Idle';
+            document.getElementById('startRtlamrBtn').style.display = running ? 'none' : 'block';
+            document.getElementById('stopRtlamrBtn').style.display = running ? 'block' : 'none';
+            
+            // Update mode indicator with frequency
+            if (running) {
+                const freq = document.getElementById('rtlamrFrequency').value;
+                document.getElementById('activeModeIndicator').innerHTML = '<span class="pulse-dot"></span>METERS @ ' + freq + ' MHz';
+            } else {
+                document.getElementById('activeModeIndicator').innerHTML = '<span class="pulse-dot"></span>METERS';
+            }
+        }
+
+        function startRtlamrStream() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource('/stream_rtlamr');
+
+            eventSource.onopen = function () {
+                showInfo('RTLAMR stream connected...');
+            };
+
+            eventSource.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                if (data.type === 'rtlamr') {
+                    addRtlamrReading(data);
+                } else if (data.type === 'status') {
+                    if (data.text === 'stopped') {
+                        setRtlamrRunning(false);
+                    }
+                } else if (data.type === 'info' || data.type === 'raw') {
+                    showInfo(data.text);
+                }
+            };
+
+            eventSource.onerror = function (e) {
+                console.error('RTLAMR stream error');
+            };
+        }
+
+        function addRtlamrReading(data) {
+            const output = document.getElementById('output');
+            const placeholder = output.querySelector('.placeholder');
+            if (placeholder) placeholder.remove();
+
+            // Store for export
+            allMessages.push(data);
+            playAlert();
+            pulseSignal();
+
+            sensorCount++;
+            document.getElementById('sensorCount').textContent = sensorCount;
+
+            // Track unique meters by ID
+            const meterId = data.Message?.ID || 'Unknown';
+            if (meterId !== 'Unknown') {
+                const deviceKey = 'METER_' + meterId;
+                if (!uniqueDevices.has(deviceKey)) {
+                    uniqueDevices.add(deviceKey);
+                    document.getElementById('deviceCount').textContent = uniqueDevices.size;
+                }
+            }
+
+            const card = document.createElement('div');
+            card.className = 'sensor-card';
+
+            let dataItems = '';
+            const msg = data.Message || {};
+            
+            // Build display from message data
+            for (const [key, value] of Object.entries(msg)) {
+                if (value !== null && value !== undefined) {
+                    const label = key.replace(/_/g, ' ');
+                    let displayValue = value;
+                    if (key === 'Consumption') displayValue = value + ' units';
+                    dataItems += `<div class="sensor-item"><span class="sensor-label">${label}:</span> <span class="sensor-value">${displayValue}</span></div>`;
+                }
+            }
+
+            const timestamp = new Date().toLocaleTimeString();
+            card.innerHTML = `
+                <div class="sensor-header">
+                    <span class="sensor-model">${data.Type || 'Meter'}</span>
+                    <span class="sensor-time">${timestamp}</span>
+                </div>
+                <div class="sensor-data">${dataItems}</div>
+            `;
+
+            output.insertBefore(card, output.firstChild);
+
+            // Limit output to 50 cards
+            while (output.children.length > 50) {
+                output.removeChild(output.lastChild);
+            }
+        }
+
+        function toggleRtlamrUnique() {
+            // No action needed, value is read on start
+        }
+
+        function toggleRtlamrLogging() {
+            const enabled = document.getElementById('rtlamrLogging').checked;
+            fetch('/logging', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: enabled, log_file: 'rtlamr_data.log' })
             });
         }
 
@@ -10064,6 +10249,8 @@
                             decoder</span></div>
                     <div class="icon-item"><span class="icon">📡</span><span class="desc">433MHz - Sensor decoder</span>
                     </div>
+                    <div class="icon-item"><span class="icon">⚡</span><span class="desc">Meters - Utility meter decoder</span>
+                    </div>
                     <div class="icon-item"><span class="icon">✈️</span><span class="desc">Aircraft - Opens ADS-B
                             Dashboard</span></div>
                     <div class="icon-item"><span class="icon">📍</span><span class="desc">APRS - Amateur radio
@@ -10097,6 +10284,14 @@
                     <li>Detects temperature, humidity, weather stations, tire pressure monitors</li>
                     <li>Supports many common protocols (Acurite, LaCrosse, Oregon Scientific, etc.)</li>
                     <li>Device intelligence builds profiles of recurring devices</li>
+                </ul>
+
+                <h3>⚡ Utility Meter Mode</h3>
+                <ul class="tip-list">
+                    <li>Decodes utility meter transmissions (water, gas, electric) using rtlamr</li>
+                    <li>Supports ERT protocol on 912 MHz (North America) or 868 MHz (Europe)</li>
+                    <li>Displays meter IDs and consumption data in real-time</li>
+                    <li>Supports SCM, SCM+, IDM, NetIDM, and R900 message types</li>
                 </ul>
 
                 <h3>✈️ Aircraft (Dashboard)</h3>
@@ -10231,6 +10426,7 @@
                 <ul class="tip-list">
                     <li><strong>Pager:</strong> RTL-SDR, rtl_fm, multimon-ng</li>
                     <li><strong>433MHz Sensors:</strong> RTL-SDR, rtl_433</li>
+                    <li><strong>Utility Meters:</strong> RTL-SDR, rtl_tcp, rtlamr</li>
                     <li><strong>Aircraft (ADS-B):</strong> RTL-SDR, dump1090 or rtl_adsb</li>
                     <li><strong>Aircraft (ACARS):</strong> Second RTL-SDR, acarsdec</li>
                     <li><strong>APRS:</strong> RTL-SDR, direwolf or multimon-ng</li>

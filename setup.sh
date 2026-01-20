@@ -136,8 +136,10 @@ check_tools() {
   info "Core SDR:"
   check_required "rtl_fm"      "RTL-SDR FM demodulator" rtl_fm
   check_required "rtl_test"    "RTL-SDR device detection" rtl_test
+  check_required "rtl_tcp"     "RTL-SDR TCP server" rtl_tcp
   check_required "multimon-ng" "Pager decoder" multimon-ng
   check_required "rtl_433"     "433MHz sensor decoder" rtl_433 rtl433
+  check_required "rtlamr"      "Utility meter decoder" rtlamr
   check_required "dump1090"    "ADS-B decoder" dump1090
   check_required "acarsdec"    "ACARS decoder" acarsdec
 
@@ -331,6 +333,24 @@ install_macos_packages() {
 
   progress "Installing rtl_433"
   brew_install rtl_433
+
+  progress "Installing rtlamr"
+  # rtlamr needs to be installed via go or binary
+  if ! cmd_exists rtlamr; then
+    if [[ -f "/home/rose/Compiled/rtlamr/rtlamr" ]]; then
+      info "Found rtlamr binary, linking to /usr/local/bin..."
+      if [[ -w /usr/local/bin ]]; then
+        ln -sf /home/rose/Compiled/rtlamr/rtlamr /usr/local/bin/rtlamr
+      else
+        sudo ln -sf /home/rose/Compiled/rtlamr/rtlamr /usr/local/bin/rtlamr
+      fi
+      ok "rtlamr linked successfully"
+    else
+      warn "rtlamr not found. Download from https://github.com/bemasher/rtlamr"
+    fi
+  else
+    ok "rtlamr already installed"
+  fi
 
   progress "Installing dump1090"
   (brew_install dump1090-mutability) || warn "dump1090 not available via Homebrew"
@@ -601,6 +621,20 @@ install_debian_packages() {
 
   progress "Installing rtl_433"
   apt_try_install_any rtl-433 rtl433 || warn "rtl-433 not available"
+
+  progress "Installing rtlamr"
+  # rtlamr needs to be installed via go or binary
+  if ! cmd_exists rtlamr; then
+    if [[ -f "/home/rose/Compiled/rtlamr/rtlamr" ]]; then
+      info "Found rtlamr binary, installing to /usr/local/bin..."
+      $SUDO install -m 0755 /home/rose/Compiled/rtlamr/rtlamr /usr/local/bin/rtlamr
+      ok "rtlamr installed successfully"
+    else
+      warn "rtlamr not found. Download from https://github.com/bemasher/rtlamr"
+    fi
+  else
+    ok "rtlamr already installed"
+  fi
 
   progress "Installing aircrack-ng"
   apt_install aircrack-ng || true

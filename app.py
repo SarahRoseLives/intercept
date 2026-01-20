@@ -134,6 +134,11 @@ aprs_rtl_process = None
 aprs_queue = queue.Queue(maxsize=QUEUE_MAX_SIZE)
 aprs_lock = threading.Lock()
 
+# RTLAMR utility meter reading
+rtlamr_process = None
+rtlamr_queue = queue.Queue(maxsize=QUEUE_MAX_SIZE)
+rtlamr_lock = threading.Lock()
+
 # TSCM (Technical Surveillance Countermeasures)
 tscm_queue = queue.Queue(maxsize=QUEUE_MAX_SIZE)
 tscm_lock = threading.Lock()
@@ -225,7 +230,8 @@ def index() -> str:
     tools = {
         'rtl_fm': check_tool('rtl_fm'),
         'multimon': check_tool('multimon-ng'),
-        'rtl_433': check_tool('rtl_433')
+        'rtl_433': check_tool('rtl_433'),
+        'rtlamr': check_tool('rtlamr')
     }
     devices = [d.to_dict() for d in SDRFactory.detect_devices()]
     return render_template('index.html', tools=tools, devices=devices, version=VERSION, changelog=CHANGELOG)

@@ -1,0 +1,67 @@
+<!-- RTLAMR UTILITY METER MODE -->
+<div id="rtlamrMode" class="mode-content">
+    <div class="section">
+        <h3>Frequency</h3>
+        <div class="form-group">
+            <label>Frequency (MHz)</label>
+            <input type="text" id="rtlamrFrequency" value="912.0" placeholder="e.g., 912.0">
+        </div>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="setRtlamrFreq('912.0')">912.0 (NA)</button>
+            <button class="preset-btn" onclick="setRtlamrFreq('868.0')">868.0 (EU)</button>
+            <button class="preset-btn" onclick="setRtlamrFreq('915.0')">915.0</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Settings</h3>
+        <div class="form-group">
+            <label>Gain (dB, 0 = auto)</label>
+            <input type="text" id="rtlamrGain" value="0" placeholder="0-49 or 0 for auto">
+        </div>
+        <div class="form-group">
+            <label>PPM Correction</label>
+            <input type="text" id="rtlamrPpm" value="0" placeholder="Frequency correction">
+        </div>
+        <div class="form-group">
+            <label>Message Type</label>
+            <select id="rtlamrMsgType">
+                <option value="scm">SCM (Standard Consumption Message)</option>
+                <option value="scm+">SCM+ (Enhanced)</option>
+                <option value="idm">IDM (Interval Data Message)</option>
+                <option value="netidm">NetIDM (Network IDM)</option>
+                <option value="r900">R900 (Neptune)</option>
+                <option value="r900bcd">R900 BCD</option>
+                <option value="all">All Types</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Filter by Meter ID (optional, comma-separated)</label>
+            <input type="text" id="rtlamrFilterId" placeholder="e.g., 12345678,87654321">
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Protocols</h3>
+        <div class="info-text" style="margin-bottom: 10px;">
+            rtlamr decodes utility meter transmissions (water, gas, electric) using ERT protocol.
+        </div>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="rtlamrUnique" checked onchange="toggleRtlamrUnique()">
+                Unique Messages Only
+            </label>
+            <label>
+                <input type="checkbox" id="rtlamrLogging" onchange="toggleRtlamrLogging()">
+                Enable Logging
+            </label>
+        </div>
+    </div>
+
+    <button class="run-btn" id="startRtlamrBtn" onclick="startRtlamrDecoding()">
+        Start Listening
+    </button>
+    <button class="stop-btn" id="stopRtlamrBtn" onclick="stopRtlamrDecoding()" style="display: none;">
+        Stop Listening
+    </button>
+</div>
